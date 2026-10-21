@@ -3,13 +3,16 @@
 use std::path::Path;
 
 pub use transcribe_cpp::CancelToken;
-use transcribe_cpp::{Backend, Error as TcError, Model, ModelOptions, RunOptions, Session, SessionOptions};
+use transcribe_cpp::{Backend, Error as TcError, Model, ModelOptions, RunOptions, Session, SessionOptions, Task};
 
-use crate::chunker;
+use crate::chunker::SAMPLE_RATE;
+use crate::pieces::Piece;
 use crate::transcript::Segment;
 
 /// 30 s of audio is ~375 audio tokens plus a few hundred text tokens.
 const CONTEXT_TOKENS: i32 = 2048;
+/// Instructions carry text (e.g. a transcript block to summarize).
+const INSTRUCT_CONTEXT_TOKENS: i32 = 8192;
 /// Pieces quieter than this are skipped: models tend to invent text in silence.
 const SILENCE_RMS: f32 = 0.002;
 
@@ -24,7 +27,10 @@ pub enum EngineError {
 }
 
 pub struct Engine {
+    model: Model,
     session: Session,
+    /// Created on first use: summaries need a bigger context.
+    instruct_session: Option<Session>,
     backend: String,
 }
 
@@ -48,7 +54,7 @@ impl Engine {
             .map_err(load_error)?;
         let backend = model.backend();
         log::info!("model loaded on {backend}");
-        Ok(Engine { session, backend })
+        Ok(Engine { model, session, instruct_session: None, backend })
     }
 
     /// Compute backend in use, e.g. "Metal", "Vulkan" or "CPU".
@@ -56,12 +62,13 @@ impl Engine {
         &self.backend
     }
 
-    /// Transcribes `pcm` (16 kHz mono). `language` is an ISO code or `None`
-    /// for auto-detection. `on_segment` sees each piece as soon as it is done,
-    /// together with how many milliseconds of audio are finished.
+    /// Transcribes the `pieces` of `pcm` (16 kHz mono) one by one. `language`
+    /// is an ISO code or `None` for auto-detection. `on_segment` sees each
+    /// piece as soon as it is done, with how many ms of audio are finished.
     pub fn transcribe(
         &mut self,
         pcm: &[f32],
+        pieces: &[Piece],
         language: Option<&str>,
         cancel: &CancelToken,
         mut on_segment: impl FnMut(&Segment, u64),
@@ -70,16 +77,39 @@ impl Engine {
         let options = RunOptions { language: language.map(str::to_owned), ..Default::default() };
 
         let mut segments = Vec::new();
-        for chunk in chunker::split(pcm) {
+        for piece in pieces {
             if cancel.is_cancelled() {
                 return Err(EngineError::Cancelled);
             }
-            let text = self.transcribe_chunk(&pcm[chunk.start..chunk.end], &options)?;
-            let segment = Segment { start_ms: chunk.start_ms(), end_ms: chunk.end_ms(), text, speaker: None };
-            on_segment(&segment, chunk.end_ms());
+            let text = self.transcribe_chunk(&pcm[piece.start..piece.end], &options)?;
+            let segment = Segment { start_ms: piece.start_ms(), end_ms: piece.end_ms(), text, speaker: piece.speaker };
+            on_segment(&segment, piece.end_ms());
             segments.push(segment);
         }
         Ok(segments)
+    }
+
+    /// Runs a free-text instruction (e.g. "summarize this: …") and returns
+    /// the model's answer. Voxtral always takes audio, so it gets a second of
+    /// silence alongside the text.
+    pub fn instruct(&mut self, prompt: &str) -> Result<String, EngineError> {
+        if self.instruct_session.is_none() {
+            let session = self
+                .model
+                .session_with(&SessionOptions { n_ctx: INSTRUCT_CONTEXT_TOKENS, ..Default::default() })
+                .map_err(|e| EngineError::Failed(e.to_string()))?;
+            self.instruct_session = Some(session);
+        }
+        let session = self.instruct_session.as_mut().expect("just created");
+        let silence = vec![0.0; SAMPLE_RATE];
+        let options = RunOptions { task: Task::Instruct, prompt: Some(prompt.to_owned()), ..Default::default() };
+        match session.run(&silence, &options) {
+            Ok(result) => Ok(result.text.trim().to_owned()),
+            Err(TcError::OutputTruncated { partial, .. } | TcError::OutputRepetition { partial, .. }) => {
+                Ok(partial.map(|t| t.text.trim().to_owned()).unwrap_or_default())
+            }
+            Err(e) => Err(EngineError::Failed(e.to_string())),
+        }
     }
 
     fn transcribe_chunk(&mut self, pcm: &[f32], options: &RunOptions) -> Result<String, EngineError> {
@@ -143,11 +173,12 @@ mod tests {
         };
         let fixture = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/speech-de.m4a");
         let pcm = crate::audio::decode_to_mono_16k(&fixture).unwrap();
+        let pieces = crate::pieces::pieces_without_speakers(&pcm);
 
         let mut engine = Engine::load(Path::new(&model)).unwrap();
         let mut progress = Vec::new();
         let segments = engine
-            .transcribe(&pcm, Some("de"), &CancelToken::new(), |_, done| progress.push(done))
+            .transcribe(&pcm, &pieces, Some("de"), &CancelToken::new(), |_, done| progress.push(done))
             .unwrap();
 
         let text: String = segments.iter().map(|s| s.text.as_str()).collect::<Vec<_>>().join(" ");
@@ -160,13 +191,13 @@ mod tests {
 
         let cancelled = CancelToken::new();
         cancelled.cancel();
-        let err = engine.transcribe(&pcm, None, &cancelled, |_, _| {}).unwrap_err();
+        let err = engine.transcribe(&pcm, &pieces, None, &cancelled, |_, _| {}).unwrap_err();
         assert!(matches!(err, EngineError::Cancelled));
 
         // The fallback for machines without a usable GPU.
         let mut cpu = Engine::load_on(Path::new(&model), Backend::Cpu).unwrap();
         assert_eq!(cpu.backend_name(), "CPU");
-        let segments = cpu.transcribe(&pcm, Some("de"), &CancelToken::new(), |_, _| {}).unwrap();
+        let segments = cpu.transcribe(&pcm, &pieces, Some("de"), &CancelToken::new(), |_, _| {}).unwrap();
         assert!(segments[0].text.to_lowercase().contains("wien"), "{segments:?}");
     }
 }

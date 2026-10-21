@@ -4,9 +4,11 @@ pub mod diarize;
 mod commands;
 pub mod engine;
 pub mod export;
+pub mod history;
 pub mod model_manager;
 pub mod pieces;
 mod self_test;
+pub mod summary;
 pub mod transcript;
 
 use tauri::Manager;
@@ -31,9 +33,9 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
-            let models_dir = app.path().app_local_data_dir()?.join("models");
-            log::info!("Wortlaut {} – models in {}", env!("CARGO_PKG_VERSION"), models_dir.display());
-            app.manage(commands::AppState::new(models_dir));
+            let data_dir = app.path().app_local_data_dir()?;
+            log::info!("Wortlaut {} – data in {}", env!("CARGO_PKG_VERSION"), data_dir.display());
+            app.manage(commands::AppState::new(&data_dir));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -43,6 +45,13 @@ pub fn run() {
             commands::transcribe,
             commands::cancel_transcription,
             commands::export_transcript,
+            commands::export_all,
+            commands::history_list,
+            commands::history_load,
+            commands::history_save,
+            commands::history_delete,
+            commands::summarize,
+            commands::allow_playback,
             commands::open_log_dir,
             commands::reveal_file,
         ])
