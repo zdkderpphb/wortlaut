@@ -8,6 +8,11 @@ Wortlaut is MIT-licensed. It ships with or downloads the following work by other
 | [transcribe.cpp](https://github.com/handy-computer/transcribe.cpp) | speech recognition runtime | MIT |
 | [ggml](https://github.com/ggml-org/ggml) (vendored in transcribe.cpp) | tensor library, Metal/Vulkan/CPU backends | MIT |
 | [miniz](https://github.com/richgel999/miniz) (vendored in transcribe.cpp) | compression | MIT |
+| [pyannote segmentation 3.0](https://huggingface.co/pyannote/segmentation-3.0), ONNX export by [sherpa-onnx](https://huggingface.co/csukuangfj/sherpa-onnx-pyannote-segmentation-3-0) | speaker detection model, downloaded on first start | MIT |
+| [3D-Speaker CAM++](https://github.com/modelscope/3D-Speaker), ONNX export by [sherpa-onnx](https://huggingface.co/csukuangfj/speaker-embedding-models) | speaker embedding model, downloaded on first start | Apache-2.0 |
+| [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) | speaker detection runtime | Apache-2.0 |
+| [ONNX Runtime](https://github.com/microsoft/onnxruntime) (inside sherpa-onnx) | neural network runtime | MIT |
+| [whatlang](https://github.com/greyblake/whatlang-rs) | language identification of the first minute | MIT |
 | [Tauri](https://tauri.app) | desktop app framework | MIT or Apache-2.0 |
 | [Symphonia](https://github.com/pdeljanov/Symphonia) | audio/video decoding | MPL-2.0 |
 | [libopus](https://opus-codec.org) via symphonia-adapter-libopus | Opus decoding | BSD-3-Clause |

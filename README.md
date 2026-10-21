@@ -10,7 +10,7 @@
 &nbsp;&nbsp;·&nbsp;&nbsp;
 [**⬇ Für Windows herunterladen**](https://github.com/zdkderpphb/wortlaut/releases/latest/download/Wortlaut-Windows-setup.exe)
 
-<img src="assets/screenshot-result.png" width="760" alt="Wortlaut zeigt ein fertiges Transkript mit Knöpfen zum Speichern als Word, Text oder Markdown">
+<img src="assets/screenshot-result.png" width="760" alt="Wortlaut zeigt ein fertiges Transkript mit Zusammenfassung und Knöpfen zum Speichern als Word, Text, Markdown und weiteren Formaten">
 
 </div>
 
@@ -23,6 +23,7 @@
    Das dauert je nach Internet 5 bis 15 Minuten und passiert nur ein einziges Mal.
 3. **Datei hineinziehen** – Ziehen Sie eine Aufnahme ins Fenster. Der Text erscheint,
    und Sie speichern ihn mit einem Klick als **Word**, **Text** oder **Markdown**.
+   Bei Interviews und Gesprächen schalten Sie vorher **Sprecher unterscheiden** ein.
 
 Das war's. Ab jetzt funktioniert Wortlaut auch ohne Internet.
 
@@ -37,9 +38,20 @@ Das war's. Ab jetzt funktioniert Wortlaut auch ohne Internet.
   und Videos wie MP4, MOV, MKV oder WebM.
 - **8 Sprachen:** Deutsch, Englisch, Französisch, Spanisch, Italienisch, Portugiesisch,
   Niederländisch und Hindi – auf Wunsch automatisch erkannt.
-- **Zeitmarken:** Auf Wunsch steht vor jedem Absatz, wann er gesagt wurde, z. B. `[00:12:30]`.
+- **Sprecher unterscheiden:** Wer spricht wann – für Interviews und Gruppen, beliebig viele
+  Personen. Aus „Sprecher 1“ wird mit einem Klick „Interviewerin“.
+- **Für Forschung und Analyse:** Speichern für **MAXQDA**, **ATLAS.ti** und **NVivo** – mit
+  Zeitmarken und Sprechern, sodass Text und Aufnahme dort verbunden sind.
+- **Untertitel:** Als SRT-Datei für Videos.
+- **Zusammenfassung:** Auf Knopfdruck die wichtigsten Punkte eines Gesprächs.
+- **Bequem korrigieren:** Text direkt bearbeiten, Stelle anhören (▶ neben jedem Absatz),
+  falsch erkannte Namen mit **Suchen & Ersetzen** überall auf einmal ändern.
+- **Nichts geht verloren:** Alle Transkripte bleiben im Verlauf, Änderungen werden automatisch gespeichert.
 - **Mehrere Dateien:** Einfach alle auf einmal hineinziehen – sie werden der Reihe nach umgewandelt.
-- **Text bearbeiten:** Tippfehler direkt in Wortlaut korrigieren, dann speichern.
+
+<div align="center">
+<img src="assets/screenshot-speakers.png" width="560" alt="Transkript mit farbig markierten Sprechern Moderatorin, Projektleiter und Buchhaltung, jeweils mit Zeitmarke und Abspiel-Knopf">
+</div>
 
 ## Beim ersten Öffnen
 
@@ -99,6 +111,25 @@ durcheinander reden, sollten Sie kurz gegenlesen. Wer gerade spricht, erkennt Wo
 </details>
 
 <details>
+<summary><b>Wie gut unterscheidet Wortlaut die Sprecher?</b></summary>
+
+Bei Interviews und Gesprächsrunden mit klar getrennten Wortbeiträgen sehr zuverlässig.
+Sehr kurze Einwürfe („Mhm“, „Genau“) und Stellen, an denen mehrere gleichzeitig sprechen,
+landen manchmal beim falschen Namen – ein kurzer Blick beim Gegenlesen genügt.
+Wenn Sie wissen, wie viele Personen sprechen, wählen Sie die **Anzahl** aus; das hilft.
+</details>
+
+<details>
+<summary><b>Wie übernehme ich ein Transkript in MAXQDA, ATLAS.ti oder NVivo?</b></summary>
+
+Klicken Sie auf **Weitere** und wählen Sie Ihr Programm. Die Datei enthält Zeitmarken und Sprecher.
+
+- **MAXQDA:** *Import → Transkripte (mit Zeitmarken)* und die Audiodatei zuordnen.
+- **ATLAS.ti:** Die Aufnahme als Dokument hinzufügen und die Word-Datei als Transkript damit verknüpfen.
+- **NVivo:** Bei der Audiodatei *Transkript importieren*, Spalten *Zeitspanne*, *Sprecher*, *Inhalt*.
+</details>
+
+<details>
 <summary><b>Der Download ist abgebrochen. Muss ich von vorne anfangen?</b></summary>
 
 Nein. Starten Sie Wortlaut neu und klicken Sie auf **Einrichtung fortsetzen** –
@@ -116,9 +147,9 @@ Bei einer Fehlermeldung finden Sie unter **Technische Details** einen Link
 <details>
 <summary><b>Wie entferne ich Wortlaut wieder?</b></summary>
 
-- **Mac:** Wortlaut aus dem Ordner *Programme* in den Papierkorb ziehen. Das Sprachmodell liegt unter
-  `~/Library/Application Support/io.github.zdkderpphb.wortlaut` und kann ebenfalls gelöscht werden.
-- **Windows:** *Einstellungen → Apps → Wortlaut → Deinstallieren*. Das Sprachmodell liegt unter
+- **Mac:** Wortlaut aus dem Ordner *Programme* in den Papierkorb ziehen. Sprachmodelle und Verlauf liegen unter
+  `~/Library/Application Support/io.github.zdkderpphb.wortlaut` und können ebenfalls gelöscht werden.
+- **Windows:** *Einstellungen → Apps → Wortlaut → Deinstallieren*. Sprachmodelle und Verlauf liegen unter
   `%LOCALAPPDATA%\io.github.zdkderpphb.wortlaut`.
 </details>
 
@@ -130,7 +161,8 @@ Wortlaut ist eine [Tauri 2](https://tauri.app)-App: Oberfläche in Svelte 5, Ker
 Die Spracherkennung läuft über [transcribe.cpp](https://github.com/handy-computer/transcribe.cpp)
 (Metal auf dem Mac, Vulkan oder CPU unter Windows) mit
 [Voxtral Mini 3B](https://huggingface.co/mistralai/Voxtral-Mini-3B-2507) von Mistral AI
-in der 4-Bit-Fassung (`Q4_K_M`).
+in der 4-Bit-Fassung (`Q4_K_M`). Sprecher erkennt [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx)
+mit pyannote-Segmentierung und CAM++-Stimmmerkmalen.
 
 ```bash
 npm install
@@ -144,9 +176,11 @@ und das [Vulkan SDK](https://vulkan.lunarg.com/sdk/home).
 **Tests**
 
 ```bash
+npm test                                   # Oberfläche (vitest)
 npm run build && cargo test --manifest-path src-tauri/Cargo.toml --lib
-# mit echtem Modell:
-WORTLAUT_MODEL=/pfad/zu/Voxtral-Mini-3B-2507-Q4_K_M.gguf cargo test --manifest-path src-tauri/Cargo.toml --lib
+# mit echten Modellen (Ordner aus der App):
+WORTLAUT_MODEL=<ordner>/Voxtral-Mini-3B-2507-Q4_K_M.gguf WORTLAUT_DIARIZE_MODELS=<ordner> \
+  cargo test --manifest-path src-tauri/Cargo.toml --lib
 ```
 
 **Aufbau**
@@ -156,9 +190,13 @@ WORTLAUT_MODEL=/pfad/zu/Voxtral-Mini-3B-2507-Q4_K_M.gguf cargo test --manifest-p
 | `src/lib/`                      | Oberfläche: Einrichtung, Warteliste, Ergebnis, Texte (de/en) |
 | `src-tauri/src/audio.rs`        | Audio und Video lesen, auf 16 kHz mono umrechnen          |
 | `src-tauri/src/chunker.rs`      | Aufnahmen in 20–30-s-Abschnitte teilen, in Sprechpausen   |
-| `src-tauri/src/engine.rs`       | Voxtral laden und Abschnitt für Abschnitt umwandeln       |
-| `src-tauri/src/model_manager.rs`| Modell herunterladen (fortsetzbar, mit Prüfsumme)         |
-| `src-tauri/src/export.rs`       | Speichern als Word, Text, Markdown                        |
+| `src-tauri/src/diarize.rs`      | Sprecher erkennen (sherpa-onnx)                           |
+| `src-tauri/src/pieces.rs`       | Aus Sprecherabschnitten umwandelbare Beiträge bilden      |
+| `src-tauri/src/engine.rs`       | Voxtral laden, Sprache bestimmen, Beiträge umwandeln      |
+| `src-tauri/src/summary.rs`      | Zusammenfassung mit Voxtral                               |
+| `src-tauri/src/history.rs`      | Verlauf: Transkripte als JSON speichern                   |
+| `src-tauri/src/model_manager.rs`| Modelle herunterladen (fortsetzbar, mit Prüfsumme)        |
+| `src-tauri/src/export.rs`       | Word, Text, Markdown, SRT, MAXQDA, ATLAS.ti, NVivo, JSON    |
 | `src-tauri/src/commands.rs`     | Verbindung zwischen Oberfläche und Rust                   |
 
 **Neue Version veröffentlichen:** Versionsnummer in `package.json`, `src-tauri/Cargo.toml` und

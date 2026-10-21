@@ -46,6 +46,7 @@ jobs:
 
       - run: npm ci
       - run: npm run check
+      - run: npm test
       # The Rust crate embeds the built frontend, so build it first.
       - run: npm run build
 
