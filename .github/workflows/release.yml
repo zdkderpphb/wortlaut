@@ -91,7 +91,18 @@ jobs:
             Beim ersten Start lädt Wortlaut einmalig das Sprachmodell (ca. 3 GB). Danach funktioniert alles offline.
             Anleitung und Hilfe: siehe [README](https://github.com/${{ github.repository }}#readme).
           args: ${{ matrix.args }}
-          assetNamePattern: ${{ matrix.assets }}
+          releaseAssetNamePattern: ${{ matrix.assets }}
+
+      # Users only need the DMG; the zipped .app is for auto-updates we don't use.
+      - name: Keep only the DMG on the release page (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api "repos/${{ github.repository }}/releases/${{ steps.tauri.outputs.releaseId }}/assets" \
+            --jq '.[] | select(.name | endswith(".tar.gz")) | .id' |
+            while read -r asset; do gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$asset"; done
 
       # Smoke-test what users get: the bundled app must find its compute
       # backends, decode audio and write Word files.
