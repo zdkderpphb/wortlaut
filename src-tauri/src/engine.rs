@@ -75,7 +75,7 @@ impl Engine {
                 return Err(EngineError::Cancelled);
             }
             let text = self.transcribe_chunk(&pcm[chunk.start..chunk.end], &options)?;
-            let segment = Segment { start_ms: chunk.start_ms(), end_ms: chunk.end_ms(), text };
+            let segment = Segment { start_ms: chunk.start_ms(), end_ms: chunk.end_ms(), text, speaker: None };
             on_segment(&segment, chunk.end_ms());
             segments.push(segment);
         }

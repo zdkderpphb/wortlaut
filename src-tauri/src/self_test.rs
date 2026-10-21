@@ -57,9 +57,11 @@ fn check_docx() -> Result<String, String> {
     let transcript = Transcript {
         title: "Selbsttest".into(),
         language: Some("de".into()),
-        segments: vec![Segment { start_ms: 0, end_ms: 1000, text: "Grüß Gott!".into() }],
+        segments: vec![Segment { start_ms: 0, end_ms: 1000, text: "Grüß Gott!".into(), speaker: None }],
+        ..Default::default()
     };
-    crate::export::write_docx(&transcript, true, &path).map_err(|e| e.to_string())?;
+    let labels = crate::export::ExportLabels::default();
+    crate::export::write(&transcript, crate::export::Format::Docx, true, &labels, &path).map_err(|e| e.to_string())?;
     let size = std::fs::metadata(&path).map_err(|e| e.to_string())?.len();
     let _ = std::fs::remove_dir_all(&dir);
     Ok(format!("{size} bytes"))

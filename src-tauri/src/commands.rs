@@ -12,7 +12,7 @@ use tauri_plugin_opener::OpenerExt;
 use crate::audio::{self, AudioError};
 use crate::chunker::SAMPLE_RATE;
 use crate::engine::{CancelToken, Engine, EngineError};
-use crate::export;
+use crate::export::{self, ExportLabels, Format};
 use crate::model_manager::{self, DownloadError, ModelSpec, ModelStatus};
 use crate::transcript::{Segment, Transcript};
 
@@ -197,7 +197,7 @@ fn run_job(
     })?;
 
     let title = path.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
-    Ok(Transcript { title, language: language.map(str::to_owned), segments })
+    Ok(Transcript { title, language: language.map(str::to_owned), segments, ..Default::default() })
 }
 
 #[tauri::command]
@@ -210,19 +210,14 @@ pub fn cancel_transcription(state: State<'_, AppState>, job_id: String) {
 #[tauri::command]
 pub fn export_transcript(
     transcript: Transcript,
-    format: String,
+    format: Format,
     timestamps: bool,
+    labels: ExportLabels,
     path: String,
 ) -> CommandResult<()> {
     let path = Path::new(&path);
-    let written = match format.as_str() {
-        "txt" => std::fs::write(path, export::to_txt(&transcript, timestamps)).map_err(anyhow::Error::from),
-        "md" => std::fs::write(path, export::to_markdown(&transcript, timestamps)).map_err(anyhow::Error::from),
-        "docx" => export::write_docx(&transcript, timestamps, path),
-        other => Err(anyhow::anyhow!("unknown format {other}")),
-    };
-    written.map_err(|e| CommandError::new("export_failed", e))?;
-    log::info!("exported {format} to {}", path.display());
+    export::write(&transcript, format, timestamps, &labels, path).map_err(|e| CommandError::new("export_failed", e))?;
+    log::info!("exported {format:?} to {}", path.display());
     Ok(())
 }
 
