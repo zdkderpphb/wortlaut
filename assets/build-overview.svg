@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="244" viewBox="0 0 800 244" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="app" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#14B8A6"/>
+      <stop offset="1" stop-color="#0F5F59"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#8B949E"/>
+    </marker>
+  </defs>
+
+  <!-- steps -->
+  <g font-size="12" font-weight="600" fill="#8B949E" text-anchor="middle" letter-spacing="0.3">
+    <text x="80" y="20">1 · Holen</text>
+    <text x="305" y="20">2 · Übersetzen</text>
+    <text x="530" y="20">3 · Zusammenfügen</text>
+    <text x="715" y="20">4 · Einpacken</text>
+  </g>
+
+  <!-- arrows -->
+  <g fill="none" stroke="#8B949E" stroke-width="1.6" marker-end="url(#arrow)">
+    <path d="M150 140 C180 140 176 76 206 76"/>
+    <path d="M150 140 L206 140"/>
+    <path d="M150 140 C180 140 176 204 206 204"/>
+    <path d="M400 76 C436 76 432 140 466 140"/>
+    <path d="M400 140 L466 140"/>
+    <path d="M400 204 C436 204 432 140 466 140"/>
+    <path d="M590 140 C614 140 610 106 636 106"/>
+    <path d="M590 140 C614 140 610 174 636 174"/>
+  </g>
+
+  <!-- 1 source -->
+  <rect x="10" y="110" width="140" height="60" rx="12" fill="#F6F8FA" stroke="#D1D9E0"/>
+  <text x="80" y="136" text-anchor="middle" font-size="15" font-weight="600" fill="#1F2328">Quellcode</text>
+  <text x="80" y="155" text-anchor="middle" font-size="12" fill="#59636E">von GitHub</text>
+
+  <!-- 2 building blocks -->
+  <g text-anchor="middle">
+    <rect x="210" y="50" width="190" height="52" rx="12" fill="#E8F7F5" stroke="#A7DCD5"/>
+    <text x="305" y="73" font-size="15" font-weight="600" fill="#0F5F59">Oberfläche</text>
+    <text x="305" y="91" font-size="12" fill="#2F7F77">Svelte</text>
+
+    <rect x="210" y="114" width="190" height="52" rx="12" fill="#E8F7F5" stroke="#A7DCD5"/>
+    <text x="305" y="137" font-size="15" font-weight="600" fill="#0F5F59">Programmkern</text>
+    <text x="305" y="155" font-size="12" fill="#2F7F77">Rust</text>
+
+    <rect x="210" y="178" width="190" height="52" rx="12" fill="#E8F7F5" stroke="#A7DCD5"/>
+    <text x="305" y="201" font-size="15" font-weight="600" fill="#0F5F59">Spracherkennung</text>
+    <text x="305" y="219" font-size="12" fill="#2F7F77">C++</text>
+  </g>
+
+  <!-- 3 the app -->
+  <rect x="470" y="85" width="120" height="110" rx="24" fill="url(#app)"/>
+  <g fill="#FFFFFF" transform="translate(478.9 69.8) scale(0.1)">
+    <rect x="232" y="432" width="48" height="160" rx="24"/>
+    <rect x="312" y="342" width="48" height="340" rx="24"/>
+    <rect x="392" y="402" width="48" height="220" rx="24"/>
+    <rect x="490" y="372" width="300" height="48" rx="24"/>
+    <rect x="490" y="488" width="240" height="48" rx="24" opacity="0.85"/>
+    <rect x="490" y="604" width="280" height="48" rx="24" opacity="0.7"/>
+  </g>
+  <text x="530" y="174" text-anchor="middle" font-size="16" font-weight="700" fill="#FFFFFF">Wortlaut</text>
+
+  <!-- 4 installers -->
+  <g text-anchor="middle">
+    <rect x="640" y="80" width="150" height="52" rx="12" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="715" y="103" font-size="15" font-weight="600" fill="#1F2328">Mac</text>
+    <text x="715" y="121" font-size="12" fill="#59636E">.dmg</text>
+
+    <rect x="640" y="148" width="150" height="52" rx="12" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="715" y="171" font-size="15" font-weight="600" fill="#1F2328">Windows</text>
+    <text x="715" y="189" font-size="12" fill="#59636E">setup.exe</text>
+  </g>
+</svg>

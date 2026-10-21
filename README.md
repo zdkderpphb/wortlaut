@@ -162,16 +162,9 @@ deshalb auch selbst bauen – etwa um genau zu wissen, was auf Ihrem Computer l�
 Programmieren müssen Sie dafür nicht: Sie installieren ein paar Werkzeuge, kopieren einige
 Befehle und warten.
 
-```mermaid
-flowchart LR
-    Q["Quellcode<br/>von GitHub"] --> O["Oberfläche<br/>Svelte"]
-    Q --> K["Programmkern<br/>Rust"]
-    Q --> S["Spracherkennung<br/>C++"]
-    O --> W["Wortlaut"]
-    K --> W
-    S --> W
-    W --> I["Installer für<br/>Mac oder Windows"]
-```
+<div align="center">
+<img src="assets/build-overview.svg" width="760" alt="So entsteht Wortlaut: Der Quellcode von GitHub wird in drei Bausteine übersetzt – Oberfläche (Svelte), Programmkern (Rust) und Spracherkennung (C++). Sie werden zum Programm Wortlaut zusammengefügt und als Installer für Mac (.dmg) und Windows (setup.exe) eingepackt.">
+</div>
 
 Ihr Computer übersetzt drei Bausteine und fügt sie zu einem Programm samt Installer zusammen.
 Beim ersten Mal dauert das eine Weile, vor allem die Spracherkennung ist ein großes Stück
