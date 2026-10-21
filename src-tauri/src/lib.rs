@@ -1,3 +1,4 @@
+pub mod audio;
 pub mod chunker;
 pub mod export;
 pub mod transcript;
