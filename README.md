@@ -10,6 +10,8 @@
 &nbsp;&nbsp;·&nbsp;&nbsp;
 [**⬇ Für Windows herunterladen**](https://github.com/zdkderpphb/wortlaut/releases/latest/download/Wortlaut-Windows-setup.exe)
 
+<sub>Lieber aus dem Quellcode? [Selbst bauen](#selbst-bauen)</sub>
+
 <img src="assets/screenshot-result.png" width="760" alt="Wortlaut zeigt ein fertiges Transkript mit farbig markierten Sprechern, Zeitmarken und dem Knopf Speichern">
 
 </div>
@@ -107,7 +109,7 @@ herunterzuladen. Die Umwandlung passiert vollständig auf Ihrem Computer.
 <summary><b>Wie genau ist der Text?</b></summary>
 
 Bei deutlicher Sprache sehr genau. Namen, Fachbegriffe und Gespräche, in denen viele
-durcheinander reden, sollten Sie kurz gegenlesen. Wer gerade spricht, erkennt Wortlaut nicht.
+durcheinander reden, sollten Sie kurz gegenlesen.
 </details>
 
 <details>
@@ -153,6 +155,155 @@ Bei einer Fehlermeldung finden Sie unter **Technische Details** einen Link
   `%LOCALAPPDATA%\io.github.zdkderpphb.wortlaut`.
 </details>
 
+## Selbst bauen
+
+Wortlaut ist offener Quellcode. Statt den fertigen Installer zu laden, können Sie das Programm
+deshalb auch selbst bauen – etwa um genau zu wissen, was auf Ihrem Computer läuft.
+Programmieren müssen Sie dafür nicht: Sie installieren ein paar Werkzeuge, kopieren einige
+Befehle und warten.
+
+```mermaid
+flowchart LR
+    Q["Quellcode<br/>von GitHub"] --> O["Oberfläche<br/>Svelte"]
+    Q --> K["Programmkern<br/>Rust"]
+    Q --> S["Spracherkennung<br/>C++"]
+    O --> W["Wortlaut"]
+    K --> W
+    S --> W
+    W --> I["Installer für<br/>Mac oder Windows"]
+```
+
+Ihr Computer übersetzt drei Bausteine und fügt sie zu einem Programm samt Installer zusammen.
+Beim ersten Mal dauert das eine Weile, vor allem die Spracherkennung ist ein großes Stück
+Software. Jeder weitere Bau geht deutlich schneller.
+
+|                          | Mac                                     | Windows                     |
+| ------------------------ | --------------------------------------- | --------------------------- |
+| Computer                 | Apple-Chip (M1 oder neuer), macOS 13+   | Windows 10 oder 11 (64 Bit) |
+| Freier Speicherplatz     | etwa 10 GB                              | etwa 20 GB                  |
+| Zeit beim ersten Mal     | etwa 30 bis 45 Minuten                  | etwa 1 Stunde               |
+| Internet                 | während der Installation und beim Bauen | während der Installation und beim Bauen |
+
+Ein selbst gebautes Wortlaut öffnet sich in der Regel ohne die Nachfrage aus
+[Beim ersten Öffnen](#beim-ersten-öffnen) – es wurde ja nicht aus dem Internet geladen.
+
+<details>
+<summary><b>Auf dem Mac</b></summary>
+
+Alle Befehle kopieren Sie ins **Terminal** (*Programme → Dienstprogramme → Terminal*)
+und bestätigen sie mit der Eingabetaste.
+
+**1. Apples Entwicklerwerkzeuge installieren**
+
+```bash
+xcode-select --install
+```
+
+Es erscheint ein Fenster – klicken Sie auf **Installieren**. Meldet das Terminal
+„already installed“, sind die Werkzeuge schon da.
+
+**2. Homebrew installieren.** Damit holen Sie die übrigen Werkzeuge. Die erste Zeile stammt von
+[brew.sh](https://brew.sh), die beiden anderen machen Homebrew im Terminal bekannt.
+Haben Sie Homebrew schon, überspringen Sie diesen Schritt.
+
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+eval "$(/opt/homebrew/bin/brew shellenv)"
+```
+
+**3. Node.js, CMake und Rust installieren**
+
+```bash
+brew install node cmake
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+source "$HOME/.cargo/env"
+```
+
+**4. Wortlaut holen und bauen**
+
+```bash
+git clone https://github.com/zdkderpphb/wortlaut.git
+cd wortlaut
+npm install
+npm run tauri build
+```
+
+Jetzt arbeitet Ihr Computer eine Weile. Zum Schluss steht im Terminal **Finished** und darunter,
+wo die fertigen Dateien liegen.
+
+**5. Installieren**
+
+```bash
+open src-tauri/target/release/bundle/dmg
+```
+
+Öffnen Sie im Fenster die Datei `Wortlaut_…_aarch64.dmg` und ziehen Sie Wortlaut in den Ordner
+**Programme** – genau wie bei der fertigen Version.
+
+</details>
+
+<details>
+<summary><b>Unter Windows</b></summary>
+
+Alle Befehle kopieren Sie in die **Eingabeaufforderung** (Startmenü öffnen, `cmd` eintippen,
+Eingabetaste) und bestätigen sie mit der Eingabetaste.
+
+**1. Werkzeuge installieren.** Windows bringt dafür das Programm `winget` mit. Fragt Windows,
+ob Änderungen erlaubt sind, klicken Sie auf **Ja**. Die erste Zeile holt Microsofts
+C++-Werkzeuge – sie ist die größte und dauert am längsten.
+
+```bat
+winget install -e --id Microsoft.VisualStudio.2022.BuildTools --accept-package-agreements --accept-source-agreements --override "--passive --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+winget install -e --id Rustlang.Rustup --accept-package-agreements --accept-source-agreements
+winget install -e --id OpenJS.NodeJS.LTS --accept-package-agreements --accept-source-agreements
+winget install -e --id Kitware.CMake --accept-package-agreements --accept-source-agreements
+winget install -e --id KhronosGroup.VulkanSDK --accept-package-agreements --accept-source-agreements
+winget install -e --id Git.Git --accept-package-agreements --accept-source-agreements
+```
+
+**2. Eingabeaufforderung schließen und neu öffnen.** Erst ein neues Fenster kennt die neuen
+Werkzeuge.
+
+**3. Wortlaut holen und bauen**
+
+```bat
+rustup default stable
+git clone https://github.com/zdkderpphb/wortlaut.git
+cd wortlaut
+npm install
+npm run tauri build
+```
+
+Jetzt arbeitet Ihr Computer eine Weile. Zum Schluss steht in der Eingabeaufforderung
+**Finished** und darunter, wo der fertige Installer liegt.
+
+**4. Installieren**
+
+```bat
+explorer src-tauri\target\release\bundle\nsis
+```
+
+Doppelklicken Sie im Fenster auf `Wortlaut_…_x64-setup.exe` – fertig.
+
+</details>
+
+<details>
+<summary><b>Wenn etwas nicht klappt</b></summary>
+
+- **„Befehl nicht gefunden“** (*command not found* bzw. *… ist nicht als interner oder externer
+  Befehl erkannt*): Schließen Sie das Fenster und öffnen Sie ein neues. Frisch installierte
+  Werkzeuge kennt erst ein neues Fenster.
+- **Der Bau bricht ab:** Starten Sie `npm run tauri build` einfach noch einmal – schon Gebautes
+  bleibt erhalten. Hilft das nicht, schicken Sie die letzten Zeilen der Ausgabe als
+  [Fehlermeldung auf GitHub](https://github.com/zdkderpphb/wortlaut/issues/new).
+- **Eine neue Version bauen:** Im Ordner `wortlaut` zuerst `git pull`, dann wieder `npm install`
+  und `npm run tauri build`.
+- **Nur ausprobieren, ohne zu installieren:** `npm run tauri dev` startet Wortlaut direkt aus
+  dem Quellcode.
+
+</details>
+
 ---
 
 ## Für Entwickler
@@ -170,8 +321,9 @@ npm run tauri dev       # App im Entwicklungsmodus starten
 npm run tauri build     # Installer bauen
 ```
 
-Voraussetzungen: Node 24, Rust (stable), CMake. Unter Windows zusätzlich Visual Studio Build Tools
-und das [Vulkan SDK](https://vulkan.lunarg.com/sdk/home).
+Voraussetzungen: Node.js, Rust (stable) und CMake, unter Windows zusätzlich die Visual Studio
+Build Tools (C++) und das [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) – Schritt für Schritt
+unter [Selbst bauen](#selbst-bauen).
 
 **Tests**
 
