@@ -1,0 +1,67 @@
+[package]
+name = "wortlaut"
+version = "0.1.0"
+description = "Audio und Video lokal in Text umwandeln – mit Voxtral."
+authors = ["Wortlaut contributors"]
+license = "MIT"
+repository = "https://github.com/zdkderpphb/wortlaut"
+edition = "2024"
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "wortlaut_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2.12", features = [] }
+tauri-plugin-opener = "2.7"
+tauri-plugin-dialog = "2.8"
+tauri-plugin-log = "2.10"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+log = "0.4"
+thiserror = "2"
+anyhow = "1"
+symphonia = { version = "0.6.1", features = ["all-codecs", "all-formats"] }
+symphonia-adapter-libopus = "0.3"
+rubato = "5"
+docx-rs = "0.4.22"
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "stream"] }
+futures-util = "0.3"
+tokio = { version = "1", features = ["fs", "io-util", "macros", "rt-multi-thread", "time"] }
+sha2 = "0.11"
+fs4 = "1.1"
+
+# Metal on Apple Silicon: static build, metallib embedded – nothing extra to ship.
+[target.'cfg(target_os = "macos")'.dependencies]
+transcribe-cpp = "0.4.0"
+
+# Windows: Vulkan as a loadable module, so the app still starts (on CPU)
+# on machines without a Vulkan driver.
+[target.'cfg(windows)'.dependencies]
+transcribe-cpp = { version = "0.4.0", default-features = false, features = ["vulkan", "dynamic-backends"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+transcribe-cpp = { version = "0.4.0", default-features = false }
+
+[dev-dependencies]
+hound = "3.5"
+tempfile = "3"
+zip = { version = "9", default-features = false, features = ["deflate"] }
+
+# Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true
+
+# Audio decoding is painfully slow unoptimized; keep dev builds usable.
+[profile.dev.package."*"]
+opt-level = 3
