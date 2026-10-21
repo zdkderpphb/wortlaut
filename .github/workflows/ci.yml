@@ -44,6 +44,20 @@ jobs:
           Add-Content $env:GITHUB_ENV "VULKAN_SDK=C:\VulkanSDK\${env:VULKAN_VERSION}"
           Add-Content $env:GITHUB_PATH "C:\VulkanSDK\${env:VULKAN_VERSION}\bin"
 
+      # sherpa-onnx (speaker detection) as DLLs. Fetched here instead of by its
+      # build script, so a warm build cache can't leave the DLLs out.
+      # Keep the version in step with sherpa-onnx in src-tauri/Cargo.lock.
+      - name: Fetch sherpa-onnx (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $v = "1.13.8"
+          $name = "sherpa-onnx-v$v-win-x64-shared-MT-Release-lib"
+          curl.exe -L --fail -o "$env:RUNNER_TEMP\sherpa.tar.bz2" "https://github.com/k2-fsa/sherpa-onnx/releases/download/v$v/$name.tar.bz2"
+          tar -xjf "$env:RUNNER_TEMP\sherpa.tar.bz2" -C "$env:RUNNER_TEMP"
+          Get-ChildItem "$env:RUNNER_TEMP\$name\lib\*.dll" | Format-Table Name, Length
+          Add-Content $env:GITHUB_ENV "SHERPA_ONNX_LIB_DIR=$env:RUNNER_TEMP\$name\lib"
+
       - run: npm ci
       - run: npm run check
       - run: npm test

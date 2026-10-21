@@ -67,8 +67,12 @@ fn stage_windows_runtime() {
             .expect("target dir")
             .to_path_buf()
     });
+    // CI sets SHERPA_ONNX_LIB_DIR so a warm build cache can't hide the DLLs.
+    println!("cargo:rerun-if-env-changed=SHERPA_ONNX_LIB_DIR");
     let prebuilt = target_dir.join("sherpa-onnx-prebuilt");
-    let sherpa_dir = find_dir_with(&prebuilt, "sherpa-onnx-v", "sherpa-onnx-c-api.dll")
+    let sherpa_dir = std::env::var_os("SHERPA_ONNX_LIB_DIR")
+        .map(PathBuf::from)
+        .or_else(|| find_dir_with(&prebuilt, "sherpa-onnx-v", "sherpa-onnx-c-api.dll"))
         .unwrap_or_else(|| panic!("sherpa-onnx-c-api.dll not found below {}", prebuilt.display()));
     for entry in std::fs::read_dir(&sherpa_dir).expect("read sherpa dir").flatten() {
         let path = entry.path();
