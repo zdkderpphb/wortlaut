@@ -3,6 +3,12 @@
 Unsigned installers work, but macOS and Windows warn on first launch (the README
 explains how users get past that). Signing removes the warning.
 
+Without a certificate the Mac app is still signed *ad hoc*
+(`bundle.macOS.signingIdentity: "-"` in `src-tauri/tauri.conf.json`). Keep that setting:
+an app that isn't signed as a whole makes macOS report the download as damaged
+("ist beschädigt"), with no *Open Anyway* button. The release workflow checks the
+signature of the app inside the DMG.
+
 ## macOS (Developer ID + notarization)
 
 Needs an [Apple Developer Program](https://developer.apple.com/programs/) membership.

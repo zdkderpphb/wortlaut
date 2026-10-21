@@ -138,6 +138,20 @@ jobs:
             --jq '.[] | select(.name | endswith(".tar.gz")) | .id' |
             while read -r asset; do gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$asset"; done
 
+      # Without a valid signature on the whole app (not just the binary),
+      # macOS calls the download "damaged" and offers no way to open it.
+      # Check the app inside the DMG, exactly as users get it.
+      - name: Check the macOS signature
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          dmg=$(ls src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg | head -n 1)
+          mnt="$RUNNER_TEMP/dmg"
+          hdiutil attach -nobrowse -readonly -mountpoint "$mnt" "$dmg"
+          codesign -dv "$mnt/Wortlaut.app"
+          codesign --verify --deep --strict --verbose=2 "$mnt/Wortlaut.app"
+          hdiutil detach "$mnt"
+
       # Smoke-test what users get: the bundled app must find its compute
       # backends, decode audio and write Word files.
       - name: Self-test the macOS app
