@@ -88,6 +88,15 @@ impl Engine {
     }
 }
 
+/// Names of the compute devices the engine can use, e.g. "MTL0" or "Vulkan0".
+pub fn compute_devices() -> Result<Vec<String>, EngineError> {
+    init_backends()?;
+    Ok(transcribe_cpp::devices()
+        .into_iter()
+        .map(|d| format!("{} ({})", d.name, d.description))
+        .collect())
+}
+
 fn is_silent(pcm: &[f32]) -> bool {
     let mean_square = pcm.iter().map(|s| s * s).sum::<f32>() / pcm.len().max(1) as f32;
     mean_square.sqrt() < SILENCE_RMS

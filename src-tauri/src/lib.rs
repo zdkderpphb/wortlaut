@@ -4,6 +4,7 @@ mod commands;
 pub mod engine;
 pub mod export;
 pub mod model_manager;
+mod self_test;
 pub mod transcript;
 
 use tauri::Manager;
@@ -11,6 +12,13 @@ use tauri_plugin_log::{Target, TargetKind};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let args: Vec<String> = std::env::args().collect();
+    if let [_, flag, report] = args.as_slice()
+        && flag == "--self-test"
+    {
+        std::process::exit(self_test::run(std::path::Path::new(report)));
+    }
+
     tauri::Builder::default()
         .plugin(
             tauri_plugin_log::Builder::new()

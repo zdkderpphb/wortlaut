@@ -1,0 +1,228 @@
+/* Design tokens: calm teal accent, neutral surfaces, system font. */
+:root {
+  --bg: #f6f8f8;
+  --surface: #ffffff;
+  --surface-2: #eff3f3;
+  --border: #dde4e4;
+  --border-strong: #b9c6c5;
+  --text: #102221;
+  --muted: #4b5d5c;
+  --primary: #0f766e;
+  --primary-hover: #115e59;
+  --primary-strong: #0f766e;
+  --primary-soft: #e3f3f1;
+  --on-primary: #ffffff;
+  --focus: #14b8a6;
+  --success: #067647;
+  --success-soft: #e6f6ec;
+  --danger: #b42318;
+  --danger-soft: #fdecea;
+  --shadow: 0 1px 2px rgb(16 34 33 / 0.06), 0 4px 16px rgb(16 34 33 / 0.06);
+
+  color-scheme: light dark;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1414;
+    --surface: #141d1d;
+    --surface-2: #192424;
+    --border: #263434;
+    --border-strong: #3a4c4b;
+    --text: #e7efee;
+    --muted: #a2b4b2;
+    --primary: #2dd4bf;
+    --primary-hover: #5eead4;
+    --primary-strong: #5eead4;
+    --primary-soft: #11302c;
+    --on-primary: #042f2e;
+    --focus: #5eead4;
+    --success: #4ade80;
+    --success-soft: #0f2a1a;
+    --danger: #f97066;
+    --danger-soft: #3a1714;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 16px rgb(0 0 0 / 0.25);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    color 150ms;
+}
+.btn.large {
+  min-height: 52px;
+  padding: 0 28px;
+  font-size: 17px;
+}
+.btn.primary {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.btn.primary:hover {
+  background: var(--primary-hover);
+}
+.btn.secondary {
+  background: var(--surface);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.btn.secondary:hover {
+  border-color: var(--primary);
+  color: var(--primary-strong);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn:focus-visible,
+.link:focus-visible,
+.icon-btn:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.icon-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.link {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--primary-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* Progress bars */
+.bar {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.bar .fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+  transition: width 300ms ease-out;
+}
+.bar.indeterminate .fill {
+  width: 35% !important;
+  animation: slide 1.4s ease-in-out infinite;
+}
+@keyframes slide {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+/* Inline notices */
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 15px;
+}
+.notice.success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.notice.success span {
+  color: var(--text);
+}
+.notice.danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.notice.danger span {
+  color: var(--text);
+  flex: 1;
+}
+
+details {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--muted);
+}
+details summary {
+  cursor: pointer;
+}
+details code {
+  display: block;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+  }
+  .bar.indeterminate .fill {
+    animation-duration: 4s;
+  }
+}
