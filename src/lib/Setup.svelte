@@ -49,7 +49,7 @@
 
 <main class="setup">
   <div class="intro">
-    <div class="logo"><Icon name="wave" size={34} /></div>
+    <div class="logo"><Icon name="logo" size={34} /></div>
     <h1>{t("setupTitle")}</h1>
     <p class="lead">{t("setupIntro")}</p>
     <ul class="points">

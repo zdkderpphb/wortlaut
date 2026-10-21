@@ -132,7 +132,7 @@
 <div class="app">
   <header class="topbar">
     <div class="brand">
-      <span class="brand-logo"><Icon name="wave" size={18} /></span>
+      <span class="brand-logo"><Icon name="logo" size={18} /></span>
       <strong>Wortlaut</strong>
       <span class="muted tagline">{t("appTagline")}</span>
     </div>

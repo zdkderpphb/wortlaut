@@ -156,6 +156,9 @@ async fn fetch(
         .user_agent(concat!("Wortlaut/", env!("CARGO_PKG_VERSION")))
         .connect_timeout(Duration::from_secs(20))
         .read_timeout(Duration::from_secs(60))
+        // The default 64 KB HTTP/2 window caps a big download at a few
+        // hundred KB/s for the first seconds.
+        .http2_adaptive_window(true)
         .build()
         .map_err(network)?;
 

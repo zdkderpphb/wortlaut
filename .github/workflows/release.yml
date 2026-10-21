@@ -1,0 +1,117 @@
+name: Release
+
+# Builds the installers and attaches them to a draft GitHub release.
+# Start it by pushing a tag (git tag v0.1.0 && git push --tags) or by hand
+# under Actions → Release → Run workflow.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS (Apple Silicon)
+            os: macos-latest
+            args: --target aarch64-apple-darwin --bundles app,dmg
+            # Fixed names so the README can link straight to the latest download.
+            assets: Wortlaut-Mac[ext]
+          - name: Windows (x64)
+            os: windows-latest
+            args: --bundles nsis
+            assets: Wortlaut-Windows[setup][ext]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    env:
+      VULKAN_VERSION: "1.4.350.0"
+      HAS_APPLE_CERT: ${{ secrets.APPLE_CERTIFICATE != '' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ runner.os == 'macOS' && 'aarch64-apple-darwin' || '' }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - name: Install Vulkan SDK (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          curl.exe -o "$env:RUNNER_TEMP\vulkan_sdk.exe" -L "https://sdk.lunarg.com/sdk/download/${env:VULKAN_VERSION}/windows/vulkan_sdk.exe"
+          & "$env:RUNNER_TEMP\vulkan_sdk.exe" --accept-licenses --default-answer --confirm-command install
+          Add-Content $env:GITHUB_ENV "VULKAN_SDK=C:\VulkanSDK\${env:VULKAN_VERSION}"
+          Add-Content $env:GITHUB_PATH "C:\VulkanSDK\${env:VULKAN_VERSION}\bin"
+
+      # Signing switches on by itself once these secrets exist (see docs/SIGNING.md).
+      - name: Enable macOS signing and notarization
+        if: runner.os == 'macOS' && env.HAS_APPLE_CERT == 'true'
+        shell: bash
+        run: |
+          {
+            echo "APPLE_CERTIFICATE=${{ secrets.APPLE_CERTIFICATE }}"
+            echo "APPLE_CERTIFICATE_PASSWORD=${{ secrets.APPLE_CERTIFICATE_PASSWORD }}"
+            echo "APPLE_SIGNING_IDENTITY=${{ secrets.APPLE_SIGNING_IDENTITY }}"
+            echo "APPLE_ID=${{ secrets.APPLE_ID }}"
+            echo "APPLE_PASSWORD=${{ secrets.APPLE_PASSWORD }}"
+            echo "APPLE_TEAM_ID=${{ secrets.APPLE_TEAM_ID }}"
+          } >> "$GITHUB_ENV"
+
+      - run: npm ci
+
+      - uses: tauri-apps/tauri-action@v1
+        id: tauri
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__
+          releaseName: Wortlaut __VERSION__
+          releaseDraft: true
+          releaseBody: |
+            ## Download
+
+            - **Mac (Apple M1 oder neuer):** `Wortlaut-Mac.dmg`
+            - **Windows 10/11:** `Wortlaut-Windows-setup.exe`
+
+            Beim ersten Start lädt Wortlaut einmalig das Sprachmodell (ca. 3 GB). Danach funktioniert alles offline.
+            Anleitung und Hilfe: siehe [README](https://github.com/${{ github.repository }}#readme).
+          args: ${{ matrix.args }}
+          assetNamePattern: ${{ matrix.assets }}
+
+      # Smoke-test what users get: the bundled app must find its compute
+      # backends, decode audio and write Word files.
+      - name: Self-test the macOS app
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          app="src-tauri/target/aarch64-apple-darwin/release/bundle/macos/Wortlaut.app"
+          "$app/Contents/MacOS/wortlaut" --self-test "$RUNNER_TEMP/self-test.txt"
+
+      - name: Install and self-test the Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem src-tauri/target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
+          Start-Process -FilePath $setup.FullName -ArgumentList "/S" -Wait
+          $dir = "$env:LOCALAPPDATA\Wortlaut"
+          Get-ChildItem $dir | Format-Table Name, Length
+          $exe = Get-ChildItem "$dir\*.exe" | Where-Object { $_.Name -notlike "uninstall*" } | Select-Object -First 1
+          $report = "$env:RUNNER_TEMP\self-test.txt"
+          $p = Start-Process -FilePath $exe.FullName -ArgumentList "--self-test", $report -Wait -PassThru
+          Get-Content $report
+          if ($p.ExitCode -ne 0) { throw "self-test failed with exit code $($p.ExitCode)" }

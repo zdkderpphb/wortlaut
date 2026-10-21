@@ -22,7 +22,8 @@
     pause: '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
     clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
     retry: '<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>',
-    wave: '<line x1="4" y1="10" x2="4" y2="14"/><line x1="8" y1="6" x2="8" y2="18"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="16" y1="7" x2="16" y2="17"/><line x1="20" y1="10" x2="20" y2="14"/>',
+    // The app icon in line form: sound bars that turn into lines of text.
+    logo: '<line x1="4" y1="10" x2="4" y2="14"/><line x1="7.5" y1="7" x2="7.5" y2="17"/><line x1="11" y1="9" x2="11" y2="15"/><line x1="15" y1="8" x2="21" y2="8"/><line x1="15" y1="12" x2="19.5" y2="12"/><line x1="15" y1="16" x2="20.5" y2="16"/>',
   } as const;
 
   export type IconName = keyof typeof paths;

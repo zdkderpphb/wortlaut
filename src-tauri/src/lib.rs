@@ -29,7 +29,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
-            let models_dir = app.path().app_data_dir()?.join("models");
+            let models_dir = app.path().app_local_data_dir()?.join("models");
             log::info!("Wortlaut {} – models in {}", env!("CARGO_PKG_VERSION"), models_dir.display());
             app.manage(commands::AppState::new(models_dir));
             Ok(())
