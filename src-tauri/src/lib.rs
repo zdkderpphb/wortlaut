@@ -4,6 +4,7 @@ mod commands;
 pub mod engine;
 pub mod export;
 pub mod model_manager;
+pub mod pieces;
 mod self_test;
 pub mod transcript;
 
