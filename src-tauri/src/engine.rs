@@ -89,6 +89,19 @@ impl Engine {
         Ok(segments)
     }
 
+    /// Transcribes up to the first minute with auto-detection and returns the
+    /// language of that text, if it is one of Voxtral's. Pinning it for the
+    /// rest keeps short, unclear pieces from drifting into another language.
+    pub fn detect_language(&mut self, pcm: &[f32], cancel: &CancelToken) -> Result<Option<&'static str>, EngineError> {
+        self.session.set_cancel_token(cancel);
+        let mut text = String::new();
+        for chunk in crate::chunker::split(pcm).into_iter().take(2) {
+            text.push_str(&self.transcribe_chunk(&pcm[chunk.start..chunk.end], &RunOptions::default())?);
+            text.push(' ');
+        }
+        Ok(crate::language::detect(&text))
+    }
+
     /// Runs a free-text instruction (e.g. "summarize this: …") and returns
     /// the model's answer. Voxtral always takes audio, so it gets a second of
     /// silence alongside the text.
@@ -188,6 +201,7 @@ mod tests {
             assert!(lower.contains(word), "missing {word:?} in {text:?}");
         }
         assert_eq!(progress.last().copied(), segments.last().map(|s| s.end_ms));
+        assert_eq!(engine.detect_language(&pcm, &CancelToken::new()).unwrap(), Some("de"));
 
         let cancelled = CancelToken::new();
         cancelled.cancel();

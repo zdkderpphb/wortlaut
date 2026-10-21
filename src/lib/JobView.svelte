@@ -1,23 +1,12 @@
 <script lang="ts">
-  import { save } from "@tauri-apps/plugin-dialog";
-  import { api, asCommandError, type CommandError, type ExportFormat } from "./api";
-  import { fileName, formatClock, formatDuration, formatStamp, siblingPath, stem } from "./format";
-  import { errorText, t, type MessageKey } from "./i18n";
+  import { api } from "./api";
+  import { formatClock, formatDuration } from "./format";
+  import { errorText, t } from "./i18n";
   import Icon from "./Icon.svelte";
-  import { queue, remainingSeconds, type Job } from "./jobs.svelte";
-  import { plainText, toTranscript } from "./text";
+  import { library, remainingSeconds, type Job } from "./library.svelte";
 
-  let { job, timestamps }: { job: Job; timestamps: boolean } = $props();
+  let { job }: { job: Job } = $props();
 
-  const formats: { format: ExportFormat; label: MessageKey; filter: string }[] = [
-    { format: "docx", label: "saveWord", filter: "Word" },
-    { format: "txt", label: "saveText", filter: "Text" },
-    { format: "md", label: "saveMarkdown", filter: "Markdown" },
-  ];
-
-  let savedPath = $state<string | null>(null);
-  let saveError = $state<CommandError | null>(null);
-  let copied = $state(false);
   let now = $state(Date.now());
 
   // Re-render the time estimate every second while running.
@@ -27,43 +16,20 @@
     return () => clearInterval(timer);
   });
 
-  // Forget the "saved" notice when switching files.
-  $effect(() => {
-    void job.id;
-    savedPath = null;
-    saveError = null;
-  });
-
   const percent = $derived(job.totalMs > 0 ? Math.min(100, (job.doneMs / job.totalMs) * 100) : 0);
   const remaining = $derived.by(() => {
     void now;
     return remainingSeconds(job);
   });
-  const hasText = $derived(job.segments.some((s) => s.text.trim().length > 0));
   const stageText = $derived(
-    job.stage === "loading" ? t("stageLoading") : job.stage === "transcribing" ? t("stageTranscribing") : t("stageReading"),
+    {
+      reading: t("stageReading"),
+      diarizing: t("stageDiarizing"),
+      loading: t("stageLoading"),
+      detecting: t("stageDetecting"),
+      transcribing: t("stageTranscribing"),
+    }[job.stage ?? "reading"],
   );
-
-  async function exportAs(format: ExportFormat, filter: string) {
-    saveError = null;
-    const path = await save({
-      defaultPath: siblingPath(job.path, format),
-      filters: [{ name: filter, extensions: [format] }],
-    });
-    if (!path) return;
-    try {
-      await api.exportTranscript(toTranscript(stem(job.path), job.language, job.segments), format, timestamps, path);
-      savedPath = path;
-    } catch (e) {
-      saveError = asCommandError(e);
-    }
-  }
-
-  async function copy() {
-    await navigator.clipboard.writeText(plainText(job.segments, timestamps));
-    copied = true;
-    setTimeout(() => (copied = false), 2000);
-  }
 </script>
 
 <article class="job">
@@ -73,17 +39,18 @@
       <h2 title={job.path}>{job.name}</h2>
     </div>
     {#if job.status === "running" || job.status === "waiting"}
-      <button class="btn secondary" onclick={() => queue.cancel(job.id)}>
+      <button class="btn secondary" onclick={() => library.cancel(job.id)}>
         <Icon name="x" />{t("cancel")}
       </button>
-    {:else if job.status === "error" || job.status === "cancelled"}
-      <button class="btn secondary" onclick={() => queue.retry(job.id)}>
-        <Icon name="retry" />{t("retry")}
-      </button>
-    {:else if job.status === "done"}
-      <button class="btn secondary" onclick={copy} disabled={!hasText}>
-        <Icon name={copied ? "check" : "copy"} />{copied ? t("copied") : t("copy")}
-      </button>
+    {:else}
+      <div class="actions">
+        <button class="btn secondary" onclick={() => library.retry(job.id)}>
+          <Icon name="retry" />{t("retry")}
+        </button>
+        <button class="btn secondary" onclick={() => library.removeJob(job.id)}>
+          <Icon name="x" />{t("remove")}
+        </button>
+      </div>
     {/if}
   </header>
 
@@ -126,49 +93,22 @@
     <p class="muted">{t("statusCancelled")}</p>
   {/if}
 
-  {#if job.status === "done"}
-    <div class="toolbar">
-      <span class="muted">{t("saveAs")}</span>
-      {#each formats as f (f.format)}
-        <button class="btn primary" onclick={() => exportAs(f.format, f.filter)}>
-          <Icon name="download" />{t(f.label)}
-        </button>
-      {/each}
-    </div>
-    {#if savedPath}
-      <div class="notice success" role="status">
-        <Icon name="check" />
-        <span>{t("saved", { name: fileName(savedPath) })}</span>
-        <button class="link" onclick={() => api.revealFile(savedPath!)}>{t("showInFolder")}</button>
-      </div>
-    {/if}
-    {#if saveError}
-      <div class="notice danger" role="alert">
-        <Icon name="alert" /><span>{errorText(saveError.code)}</span>
-      </div>
-    {/if}
-  {/if}
-
-  {#if job.segments.length > 0}
-    {#if job.status === "done" && hasText}<p class="muted hint">{t("resultEditHint")}</p>{/if}
-    <div class="document" class:live={job.status === "running"}>
-      {#each job.segments as segment, i (segment.startMs)}
-        {#if segment.text.trim() || job.status === "done"}
+  {#if job.segments.some((s) => s.text.trim())}
+    <div class="document">
+      {#each job.segments as segment (segment.startMs)}
+        {#if segment.text.trim()}
           <div class="paragraph">
-            {#if timestamps}<span class="stamp">{formatStamp(segment.startMs)}</span>{/if}
-            {#if job.status === "done"}
-              <p contenteditable="true" spellcheck="true" bind:innerText={job.segments[i].text}></p>
-            {:else}
-              <p>{segment.text}</p>
+            {#if segment.speaker != null}
+              <span class="speaker" style:--spk="var(--spk-{segment.speaker % 6})">
+                {job.options.speakerLabel}
+                {segment.speaker + 1}
+              </span>
             {/if}
+            <p>{segment.text}</p>
           </div>
         {/if}
       {/each}
     </div>
-  {/if}
-
-  {#if job.status === "done" && !hasText}
-    <p class="muted empty">{t("resultEmpty")}</p>
   {/if}
 </article>
 
@@ -184,6 +124,10 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
+  }
+  .actions {
+    display: flex;
+    gap: 8px;
   }
   .title {
     display: flex;
@@ -217,19 +161,6 @@
     margin: 0;
     font-variant-numeric: tabular-nums;
   }
-  .toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-  }
-  .toolbar > .muted {
-    margin-right: 4px;
-  }
-  .hint {
-    margin: 0;
-    font-size: 14px;
-  }
   .document {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -237,34 +168,20 @@
     padding: 24px 28px;
     max-width: 75ch;
   }
-  .document.live p {
-    color: var(--muted);
-  }
   .paragraph + .paragraph {
     margin-top: 14px;
-  }
-  .stamp {
-    display: block;
-    font-size: 13px;
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
-    margin-bottom: 2px;
   }
   .paragraph p {
     margin: 0;
     font-size: 17px;
     line-height: 1.7;
-    white-space: pre-wrap;
-    border-radius: 6px;
-    outline: none;
-    transition: background-color 150ms;
+    color: var(--muted);
   }
-  .paragraph p[contenteditable]:hover {
-    background: var(--surface-2);
-  }
-  .paragraph p[contenteditable]:focus-visible {
-    background: var(--surface-2);
-    box-shadow: 0 0 0 2px var(--focus);
+  .speaker {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 650;
+    color: var(--spk);
   }
   .error {
     display: flex;
@@ -280,9 +197,5 @@
   }
   .error-title {
     font-weight: 600;
-  }
-  .empty {
-    text-align: center;
-    padding: 24px;
   }
 </style>

@@ -188,7 +188,7 @@ pub struct TranscribeOptions {
 #[serde(rename_all = "camelCase")]
 struct JobProgress {
     job_id: String,
-    /// "reading" | "diarizing" | "loading" | "transcribing"
+    /// "reading" | "diarizing" | "loading" | "detecting" | "transcribing"
     stage: &'static str,
     done_ms: u64,
     total_ms: u64,
@@ -257,8 +257,15 @@ fn run_job(
 
     let mut engine = state.engine(|| progress("loading", 0, total_ms, None))?;
     let engine = engine.as_mut().expect("engine is loaded");
+    let language = if options.language == "auto" {
+        progress("detecting", 0, total_ms, None);
+        let detected = engine.detect_language(&pcm, token)?;
+        log::info!("detected language: {detected:?}");
+        detected
+    } else {
+        Some(options.language.as_str())
+    };
     progress("transcribing", 0, total_ms, None);
-    let language = (options.language != "auto").then_some(options.language.as_str());
     let segments = engine.transcribe(&pcm, &pieces, language, token, |segment, done_ms| {
         progress("transcribing", done_ms, total_ms, Some(segment.clone()));
     })?;
@@ -385,6 +392,21 @@ pub fn allow_playback(app: AppHandle, path: String) -> bool {
 
 // ------------------------------------------------------------------ misc
 
+/// Files passed on the command line – "Open with Wortlaut" or a file dropped
+/// on the program icon on Windows. Handed out once.
+#[tauri::command]
+pub fn take_startup_files() -> Vec<String> {
+    static TAKEN: AtomicBool = AtomicBool::new(false);
+    if TAKEN.swap(true, Ordering::SeqCst) {
+        return Vec::new();
+    }
+    startup_files(std::env::args().skip(1))
+}
+
+fn startup_files(args: impl Iterator<Item = String>) -> Vec<String> {
+    args.filter(|a| !a.starts_with('-') && Path::new(a).is_file()).collect()
+}
+
 #[tauri::command]
 pub fn open_log_dir(app: AppHandle) -> CommandResult<()> {
     let dir = app.path().app_log_dir().map_err(|e| CommandError::new("file_read", e))?;
@@ -412,5 +434,12 @@ mod tests {
             "Sprecher 3"
         ]);
         assert!(speaker_names(&[piece(None)], "Sprecher").is_empty());
+    }
+
+    #[test]
+    fn startup_files_are_existing_files_only() {
+        let fixture = format!("{}/tests/fixtures/tone.mp3", env!("CARGO_MANIFEST_DIR"));
+        let args = ["--self-test".to_owned(), fixture.clone(), "/does/not/exist.mp3".to_owned()];
+        assert_eq!(startup_files(args.into_iter()), vec![fixture]);
     }
 }

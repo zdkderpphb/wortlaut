@@ -5,6 +5,7 @@ mod commands;
 pub mod engine;
 pub mod export;
 pub mod history;
+pub mod language;
 pub mod model_manager;
 pub mod pieces;
 mod self_test;
@@ -54,6 +55,7 @@ pub fn run() {
             commands::allow_playback,
             commands::open_log_dir,
             commands::reveal_file,
+            commands::take_startup_files,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

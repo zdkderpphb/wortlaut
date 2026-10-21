@@ -36,6 +36,7 @@ futures-util = "0.3"
 tokio = { version = "1", features = ["fs", "io-util", "macros", "rt-multi-thread", "time"] }
 sha2 = "0.11"
 fs4 = "1.1"
+whatlang = "0.18"
 
 # Metal on Apple Silicon: static build, metallib embedded – nothing extra to ship.
 [target.'cfg(target_os = "macos")'.dependencies]

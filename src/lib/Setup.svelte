@@ -12,7 +12,11 @@
   let error = $state<CommandError | null>(null);
 
   const partialBytes = $derived(info.status.state === "partial" ? info.status.bytes : 0);
-  const percent = $derived(progress ? (progress.downloaded / progress.total) * 100 : 0);
+  /** Only a small addition is missing (e.g. new models after an update). */
+  const isUpdate = $derived(partialBytes > 0 && info.sizeBytes - partialBytes < 100_000_000);
+  /** In the update case only the missing part counts. */
+  const base = $derived(isUpdate ? partialBytes : 0);
+  const percent = $derived(progress ? ((progress.downloaded - base) / Math.max(progress.total - base, 1)) * 100 : 0);
   const remainingSecs = $derived(
     progress && progress.bytesPerSec > 0 ? (progress.total - progress.downloaded) / progress.bytesPerSec : null,
   );
@@ -61,7 +65,7 @@
 
   <section class="card" aria-live="polite">
     {#if downloading && progress}
-      <h2>{progress.verifying ? t("setupVerifying") : t("setupDownloading")}</h2>
+      <h2>{progress.verifying ? t("setupVerifying") : isUpdate ? t("setupUpdateDownloading") : t("setupDownloading")}</h2>
       <div
         class="bar"
         class:indeterminate={progress.verifying}
@@ -76,8 +80,8 @@
         <p class="numbers">
           <span>
             {t("setupProgress", {
-              done: formatBytes(progress.downloaded),
-              total: formatBytes(progress.total),
+              done: formatBytes(progress.downloaded - base),
+              total: formatBytes(progress.total - base),
               speed: formatSpeed(progress.bytesPerSec),
             })}
           </span>
@@ -90,10 +94,15 @@
           <Icon name="pause" />{t("setupPause")}
         </button>
       {/if}
+    {:else if isUpdate}
+      <h2>{t("setupUpdateTitle")}</h2>
+      <p>{t("setupUpdateText", { size: formatBytes(info.sizeBytes - partialBytes) })}</p>
     {:else}
       <h2>{t("setupCardTitle")}</h2>
       <p>{t("setupCardText", { size: formatBytes(info.sizeBytes) })}</p>
       <p class="hint">{t("setupFreeSpace", { free: formatBytes(info.freeBytes) })}</p>
+    {/if}
+    {#if !(downloading && progress)}
 
       {#if error}
         <div class="error" role="alert">
@@ -108,14 +117,14 @@
         </div>
       {/if}
 
-      {#if partialBytes > 0}
+      {#if partialBytes > 0 && !isUpdate}
         <p class="hint">
           {t("setupResumeHint", { done: formatBytes(partialBytes), total: formatBytes(info.sizeBytes) })}
         </p>
       {/if}
       <button class="btn primary large" onclick={start}>
         <Icon name={error ? "retry" : "download"} />
-        {error ? t("setupRetry") : partialBytes > 0 ? t("setupResume") : t("setupStart")}
+        {error ? t("setupRetry") : isUpdate ? t("setupUpdateStart") : partialBytes > 0 ? t("setupResume") : t("setupStart")}
       </button>
     {/if}
   </section>
