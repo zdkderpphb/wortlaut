@@ -32,6 +32,31 @@ impl ModelSpec {
         }
     }
 
+    /// pyannote segmentation 3.0 (MIT), finds speech and speaker changes.
+    pub fn speaker_segmentation() -> ModelSpec {
+        ModelSpec {
+            url: "https://huggingface.co/csukuangfj/sherpa-onnx-pyannote-segmentation-3-0/resolve/main/model.onnx".into(),
+            file_name: "pyannote-segmentation-3.0.onnx".into(),
+            size: 5_992_913,
+            sha256: "220ad67ca923bef2fa91f2390c786097bf305bceb5e261d4af67b38e938e1079".into(),
+        }
+    }
+
+    /// 3D-Speaker CAM++ (Apache-2.0), tells voices apart.
+    pub fn speaker_embedding() -> ModelSpec {
+        ModelSpec {
+            url: "https://huggingface.co/csukuangfj/speaker-embedding-models/resolve/main/3dspeaker_speech_campplus_sv_zh_en_16k-common_advanced.onnx".into(),
+            file_name: "campplus-speaker-embedding.onnx".into(),
+            size: 28_281_164,
+            sha256: "aa3cfc16963a10586a9393f5035d6d6b57e98d358b347f80c2a30bf4f00ceba2".into(),
+        }
+    }
+
+    /// Everything the app needs, downloaded together during setup.
+    pub fn all() -> Vec<ModelSpec> {
+        vec![Self::voxtral_mini(), Self::speaker_segmentation(), Self::speaker_embedding()]
+    }
+
     pub fn path_in(&self, dir: &Path) -> PathBuf {
         dir.join(&self.file_name)
     }
@@ -90,6 +115,54 @@ pub fn status(dir: &Path, spec: &ModelSpec) -> ModelStatus {
         Some(bytes) if bytes > 0 => ModelStatus::Partial { bytes },
         _ => ModelStatus::Missing,
     }
+}
+
+/// Ready only when every model is; otherwise the bytes already on disk.
+pub fn status_all(dir: &Path, specs: &[ModelSpec]) -> ModelStatus {
+    let mut bytes = 0;
+    let mut all_ready = true;
+    for spec in specs {
+        match status(dir, spec) {
+            ModelStatus::Ready => bytes += spec.size,
+            ModelStatus::Partial { bytes: b } => {
+                bytes += b;
+                all_ready = false;
+            }
+            ModelStatus::Missing => all_ready = false,
+        }
+    }
+    match (all_ready, bytes) {
+        (true, _) => ModelStatus::Ready,
+        (false, 0) => ModelStatus::Missing,
+        (false, bytes) => ModelStatus::Partial { bytes },
+    }
+}
+
+pub fn total_size(specs: &[ModelSpec]) -> u64 {
+    specs.iter().map(|s| s.size).sum()
+}
+
+/// Downloads every model that is not ready yet, one after the other,
+/// reporting progress for the whole set.
+pub async fn download_all(
+    dir: &Path,
+    specs: &[ModelSpec],
+    cancel: Arc<AtomicBool>,
+    mut on_progress: impl FnMut(Progress),
+) -> Result<(), DownloadError> {
+    let total = total_size(specs);
+    let mut finished = 0;
+    for spec in specs {
+        if status(dir, spec) != ModelStatus::Ready {
+            download(dir, spec, cancel.clone(), |p| {
+                on_progress(Progress { downloaded: finished + p.downloaded, total, ..p });
+            })
+            .await?;
+        }
+        finished += spec.size;
+    }
+    on_progress(Progress { downloaded: total, total, bytes_per_sec: 0.0, verifying: false });
+    Ok(())
 }
 
 /// Free bytes on the disk that holds `dir` (or its nearest existing parent).
@@ -376,6 +449,56 @@ mod tests {
         let runtime = tokio::runtime::Runtime::new().unwrap();
         let err = runtime.block_on(download(dir.path(), &spec, Arc::default(), |_| {})).unwrap_err();
         assert!(matches!(err, DownloadError::NoSpace { .. }), "{err:?}");
+    }
+
+    fn named(spec: &ModelSpec, file_name: &str) -> ModelSpec {
+        ModelSpec { file_name: file_name.into(), ..spec.clone() }
+    }
+
+    #[test]
+    fn the_set_is_ready_only_when_every_file_is() {
+        let body = body();
+        let spec = ModelSpec { url: String::new(), file_name: "a".into(), size: body.len() as u64, sha256: String::new() };
+        let specs = [named(&spec, "a"), named(&spec, "b")];
+        let dir = tempfile::tempdir().unwrap();
+        assert_eq!(status_all(dir.path(), &specs), ModelStatus::Missing);
+
+        std::fs::write(dir.path().join("a"), &body).unwrap();
+        std::fs::write(dir.path().join("b.part"), &body[..100]).unwrap();
+        assert_eq!(status_all(dir.path(), &specs), ModelStatus::Partial { bytes: body.len() as u64 + 100 });
+
+        std::fs::write(dir.path().join("b"), &body).unwrap();
+        assert_eq!(status_all(dir.path(), &specs), ModelStatus::Ready);
+        assert_eq!(total_size(&specs), 2 * body.len() as u64);
+    }
+
+    #[tokio::test]
+    async fn downloads_the_whole_set_with_one_progress_and_skips_finished_files() {
+        let body = body();
+        let server = serve(body.clone());
+        let spec = spec_for(&server, &body);
+        let specs = [named(&spec, "first.onnx"), named(&spec, "second.onnx"), named(&spec, "third.onnx")];
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("first.onnx"), &body).unwrap();
+
+        let mut seen = Vec::new();
+        download_all(dir.path(), &specs, Arc::default(), |p| seen.push(p)).await.unwrap();
+
+        assert_eq!(status_all(dir.path(), &specs), ModelStatus::Ready);
+        assert_eq!(server.ranges.lock().unwrap().len(), 2, "first file must not be fetched again");
+        let total = 3 * body.len() as u64;
+        assert!(seen.iter().all(|p| p.total == total && p.downloaded <= total));
+        assert!(seen.windows(2).all(|w| w[0].downloaded <= w[1].downloaded), "progress went backwards");
+        assert_eq!(seen.last().unwrap().downloaded, total);
+    }
+
+    #[test]
+    fn the_app_ships_three_models() {
+        let names: Vec<_> = ModelSpec::all().into_iter().map(|s| s.file_name).collect();
+        assert_eq!(
+            names,
+            ["Voxtral-Mini-3B-2507-Q4_K_M.gguf", "pyannote-segmentation-3.0.onnx", "campplus-speaker-embedding.onnx"]
+        );
     }
 
     #[test]
