@@ -57,12 +57,59 @@ fn stage_windows_runtime() {
     }
     engine_dlls.iter().for_each(|p| copy(p));
 
+    // sherpa-onnx (speaker detection): its build script unpacks the DLLs
+    // somewhere below its OUT_DIR, which survives a warm build cache.
+    let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
+    let build_dir = out_dir.ancestors().nth(2).expect("target/<profile>/build").to_path_buf();
+    let sherpa_dir = find_dir_with(&build_dir, "sherpa-onnx-sys-", "sherpa-onnx-c-api.dll")
+        .unwrap_or_else(|| panic!("sherpa-onnx-c-api.dll not found below {}", build_dir.display()));
+    for entry in std::fs::read_dir(&sherpa_dir).expect("read sherpa dir").flatten() {
+        let path = entry.path();
+        if path.extension().is_some_and(|e| e.eq_ignore_ascii_case("dll")) {
+            copy(&path);
+        }
+    }
+
     let system32 = PathBuf::from(std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into())).join("System32");
     for name in ["vcruntime140.dll", "vcruntime140_1.dll", "msvcp140.dll"] {
         copy(&system32.join(name));
     }
 
+    // Test binaries live in deps/, the app itself in the profile root.
+    let profile_dir = out_dir.ancestors().nth(3).expect("target/<profile>").to_path_buf();
+    for dest in [profile_dir.clone(), profile_dir.join("deps")] {
+        std::fs::create_dir_all(&dest).expect("create output dir");
+        for entry in std::fs::read_dir(&runtime).expect("read runtime dir").flatten() {
+            let _ = std::fs::copy(entry.path(), dest.join(entry.file_name()));
+        }
+    }
+
     println!("cargo:rerun-if-changed=build.rs");
     // Re-stage when the folder is missing, e.g. on a fresh checkout with a warm target cache.
     println!("cargo:rerun-if-changed=runtime");
+}
+
+/// The newest folder containing `file`, below `<root>/<prefix>*/`.
+#[cfg(windows)]
+fn find_dir_with(root: &std::path::Path, prefix: &str, file: &str) -> Option<std::path::PathBuf> {
+    fn walk(dir: &std::path::Path, file: &str, depth: usize, found: &mut Vec<std::path::PathBuf>) {
+        if dir.join(file).is_file() {
+            found.push(dir.to_path_buf());
+        }
+        if depth == 0 {
+            return;
+        }
+        for entry in std::fs::read_dir(dir).into_iter().flatten().flatten() {
+            if entry.file_type().is_ok_and(|t| t.is_dir()) {
+                walk(&entry.path(), file, depth - 1, found);
+            }
+        }
+    }
+    let mut found = Vec::new();
+    for entry in std::fs::read_dir(root).ok()?.flatten() {
+        if entry.file_name().to_string_lossy().starts_with(prefix) {
+            walk(&entry.path(), file, 6, &mut found);
+        }
+    }
+    found.into_iter().max_by_key(|d| d.join(file).metadata().and_then(|m| m.modified()).ok())
 }

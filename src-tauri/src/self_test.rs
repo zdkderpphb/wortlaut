@@ -10,8 +10,9 @@ use crate::transcript::{Segment, Transcript};
 /// Runs every check, writes a report to `report_path`, returns the exit code.
 pub fn run(report_path: &Path) -> i32 {
     let mut report = format!("Wortlaut {} self-test\n", env!("CARGO_PKG_VERSION"));
-    let checks: [(&str, fn() -> Result<String, String>); 3] = [
+    let checks: [(&str, fn() -> Result<String, String>); 4] = [
         ("compute devices", check_devices),
+        ("speaker detection library", check_diarizer),
         ("audio decoding", check_audio),
         ("word export", check_docx),
     ];
@@ -37,6 +38,15 @@ fn check_devices() -> Result<String, String> {
         return Err("no compute device registered".into());
     }
     Ok(devices.join(", "))
+}
+
+/// Without models this must fail cleanly – proving the library loaded.
+fn check_diarizer() -> Result<String, String> {
+    let missing = Path::new("missing-model.onnx");
+    match crate::diarize::detect_speakers(missing, missing, &[0.0; 16_000], None) {
+        Err(crate::diarize::DiarizeError::Init) => Ok("loaded".into()),
+        other => Err(format!("unexpected: {other:?}")),
+    }
 }
 
 fn check_audio() -> Result<String, String> {
