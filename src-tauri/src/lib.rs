@@ -2,6 +2,7 @@ pub mod audio;
 pub mod chunker;
 pub mod engine;
 pub mod export;
+pub mod model_manager;
 pub mod transcript;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
