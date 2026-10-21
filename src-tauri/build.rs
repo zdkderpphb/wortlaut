@@ -1,7 +1,24 @@
 fn main() {
     #[cfg(windows)]
     stage_windows_runtime();
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
+        link_clang_runtime();
+    }
     tauri_build::build()
+}
+
+/// ggml's Metal code uses `@available(...)` checks. With a deployment target
+/// below the SDK (we support macOS 13) clang turns those into calls to
+/// `__isPlatformVersionAtLeast` from its compiler runtime, which rustc does
+/// not link on its own.
+fn link_clang_runtime() {
+    let output = std::process::Command::new("clang")
+        .arg("--print-resource-dir")
+        .output()
+        .expect("clang must be installed (Xcode command line tools)");
+    let resource_dir = String::from_utf8(output.stdout).expect("utf-8 path");
+    println!("cargo:rustc-link-search=native={}/lib/darwin", resource_dir.trim());
+    println!("cargo:rustc-link-lib=static=clang_rt.osx");
 }
 
 /// Windows loads DLLs from the exe's folder. Collect everything the app needs

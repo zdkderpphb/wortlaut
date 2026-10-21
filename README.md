@@ -26,6 +26,10 @@
 
 Das war's. Ab jetzt funktioniert Wortlaut auch ohne Internet.
 
+<div align="center">
+<img src="assets/screenshot-home.png" width="560" alt="Startseite von Wortlaut mit großer Fläche zum Hineinziehen von Dateien">
+</div>
+
 ## Was Wortlaut kann
 
 - **Privat:** Ihre Aufnahmen verlassen den Computer nie. Keine Cloud, kein Konto, keine Kosten.
