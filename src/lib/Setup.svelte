@@ -51,9 +51,10 @@
   }
 </script>
 
+<div class="titlebar drag" data-tauri-drag-region></div>
 <main class="setup">
   <div class="intro">
-    <div class="logo"><Icon name="logo" size={34} /></div>
+    <div class="logo"><Icon name="logo" size={32} /></div>
     <h1>{t("setupTitle")}</h1>
     <p class="lead">{t("setupIntro")}</p>
     <ul class="points">
@@ -131,10 +132,18 @@
 </main>
 
 <style>
+  .titlebar {
+    height: 12px;
+  }
+  :global(.mac) .titlebar {
+    height: 38px;
+  }
   .setup {
-    max-width: 640px;
+    max-width: 600px;
+    max-height: calc(100vh - 38px);
+    overflow-y: auto;
     margin: 0 auto;
-    padding: 56px 32px 40px;
+    padding: 24px 32px 40px;
     display: flex;
     flex-direction: column;
     gap: 32px;
@@ -147,14 +156,16 @@
     place-items: center;
     width: 64px;
     height: 64px;
-    border-radius: 18px;
-    background: var(--primary);
-    color: var(--on-primary);
-    margin-bottom: 20px;
+    border-radius: 16px;
+    background: linear-gradient(160deg, #19b4a3, #0d5f58);
+    color: #fff;
+    box-shadow: 0 4px 14px rgb(15 118 110 / 0.3);
+    margin-bottom: 18px;
   }
   h1 {
-    font-size: 30px;
-    margin: 0 0 12px;
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 10px;
   }
   .lead {
     font-size: 18px;
@@ -182,9 +193,9 @@
   }
   .card {
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px;
+    border: 0.5px solid var(--border);
+    border-radius: 14px;
+    padding: 24px 26px;
     box-shadow: var(--shadow);
   }
   h2 {

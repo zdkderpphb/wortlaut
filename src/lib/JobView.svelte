@@ -35,8 +35,8 @@
 <article class="job">
   <header>
     <div class="title">
-      <Icon name="file" />
-      <h2 title={job.path}>{job.name}</h2>
+      <h1 title={job.path}>{job.name}</h1>
+      <p class="meta">{job.options.detectSpeakers ? t("speakersLabel") : t("tabTranscript")}</p>
     </div>
     {#if job.status === "running" || job.status === "waiting"}
       <button class="btn secondary" onclick={() => library.cancel(job.id)}>
@@ -94,7 +94,7 @@
   {/if}
 
   {#if job.segments.some((s) => s.text.trim())}
-    <div class="document">
+    <div class="paper">
       {#each job.segments as segment (segment.startMs)}
         {#if segment.text.trim()}
           <div class="paragraph">
@@ -114,6 +114,9 @@
 
 <style>
   .job {
+    width: 100%;
+    max-width: 780px;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -130,19 +133,20 @@
     gap: 8px;
   }
   .title {
-    display: flex;
-    align-items: center;
-    gap: 10px;
     min-width: 0;
-    color: var(--primary-strong);
   }
-  h2 {
+  h1 {
     margin: 0;
-    font-size: 20px;
-    color: var(--text);
+    font-size: 26px;
+    font-weight: 700;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  .meta {
+    margin: 2px 0 0;
+    font-size: 13px;
+    color: var(--muted);
   }
   .status-line {
     display: flex;
@@ -161,26 +165,26 @@
     margin: 0;
     font-variant-numeric: tabular-nums;
   }
-  .document {
+  .paper {
     background: var(--surface);
-    border: 1px solid var(--border);
+    border: 0.5px solid var(--border);
     border-radius: 14px;
-    padding: 24px 28px;
-    max-width: 75ch;
+    box-shadow: var(--shadow);
+    padding: 26px 34px;
   }
   .paragraph + .paragraph {
     margin-top: 14px;
   }
   .paragraph p {
     margin: 0;
-    font-size: 17px;
-    line-height: 1.7;
+    font-size: 16px;
+    line-height: 1.65;
     color: var(--muted);
   }
   .speaker {
     display: inline-block;
-    font-size: 13px;
-    font-weight: 650;
+    font-size: 12.5px;
+    font-weight: 600;
     color: var(--spk);
   }
   .error {

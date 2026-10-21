@@ -18,8 +18,10 @@
   let skipped = $state<string[]>([]);
 
   const dateFormat = new Intl.DateTimeFormat(locale === "de" ? "de-AT" : "en-US", {
-    dateStyle: "short",
-    timeStyle: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 
   function addFiles(paths: string[]) {
@@ -95,45 +97,51 @@
   {/if}
 {/snippet}
 
-<div class="app">
-  <header class="topbar">
-    <div class="brand">
-      <span class="brand-logo"><Icon name="logo" size={18} /></span>
-      <strong>Wortlaut</strong>
-      <span class="muted tagline">{t("appTagline")}</span>
-    </div>
-    <span class="badge"><Icon name="shield" size={16} />{t("offlineBadge")}</span>
-  </header>
-
-  {#if library.isEmpty}
-    <main class="empty-state">
+{#if library.isEmpty}
+  <div class="welcome">
+    <div class="titlebar drag" data-tauri-drag-region></div>
+    <main class="welcome-body">
+      <header class="welcome-head">
+        <span class="app-icon"><Icon name="logo" size={30} /></span>
+        <h1>Wortlaut</h1>
+        <p class="muted">{t("appTagline")}</p>
+      </header>
       {@render skippedNotice()}
       <NewView {dragging} onPick={pickFiles} />
+      <p class="privacy"><Icon name="shield" size={15} />{t("offlineLong")}</p>
     </main>
-  {:else}
-    <div class="workspace">
-      <aside>
-        <button class="new-file" class:selected={library.selection === null} onclick={() => (library.selection = null)}>
-          <Icon name="plus" />
-          <span>{dragging ? t("dropActive") : t("newFile")}</span>
-        </button>
+  </div>
+{:else}
+  <div class="window">
+    <aside class="sidebar">
+      <div class="sidebar-top drag" data-tauri-drag-region></div>
+      <div class="brand drag" data-tauri-drag-region>
+        <span class="brand-icon"><Icon name="logo" size={16} /></span>
+        <strong>Wortlaut</strong>
+      </div>
 
+      <button class="new-file" class:selected={library.selection === null} onclick={() => (library.selection = null)}>
+        <Icon name="plus" size={18} />
+        <span>{dragging ? t("dropActive") : t("newFile")}</span>
+      </button>
+
+      <nav class="lists">
         {#if library.jobs.length}
-          <h3 class="section">{t("sectionRunning")}</h3>
-          <ul class="list">
+          <h2 class="section">{t("sectionRunning")}</h2>
+          <ul>
             {#each library.jobs as job (job.id)}
               <li>
                 <button
-                  class="entry"
+                  class="item"
                   class:selected={library.selection?.id === job.id}
                   onclick={() => (library.selection = { kind: "job", id: job.id })}
                 >
-                  <span class="entry-icon {job.status}">
-                    <Icon name={statusIcon[job.status]} size={18} spin={job.status === "running"} />
+                  <span class="item-icon {job.status}">
+                    <Icon name={statusIcon[job.status]} size={17} spin={job.status === "running"} />
                   </span>
-                  <span class="entry-text">
-                    <span class="entry-name" title={job.path}>{job.name}</span>
-                    <span class="entry-sub muted">
+                  <span class="item-text">
+                    <span class="item-name" title={job.path}>{job.name}</span>
+                    <span class="item-sub">
                       {t(statusLabel[job.status])}{#if job.status === "running" && job.totalMs > 0}
                         · {Math.round((job.doneMs / job.totalMs) * 100)} %{/if}
                     </span>
@@ -141,7 +149,7 @@
                 </button>
                 {#if job.status !== "running"}
                   <button class="icon-btn remove" aria-label={t("remove")} title={t("remove")} onclick={() => library.removeJob(job.id)}>
-                    <Icon name="x" size={16} />
+                    <Icon name="x" size={15} />
                   </button>
                 {/if}
               </li>
@@ -150,39 +158,39 @@
         {/if}
 
         {#if library.history.length}
-          <h3 class="section">{t("sectionHistory")}</h3>
-          <ul class="list">
+          <h2 class="section">{t("sectionHistory")}</h2>
+          <ul>
             {#each library.history as item (item.meta.id)}
               <li>
                 <button
-                  class="entry"
+                  class="item"
                   class:selected={library.selection?.id === item.meta.id}
                   onclick={() => library.open(item.meta.id)}
                 >
-                  <span class="entry-icon done"><Icon name={item.meta.speakerCount ? "users" : "fileText"} size={18} /></span>
-                  <span class="entry-text">
-                    <span class="entry-name" title={item.meta.sourcePath ?? item.meta.title}>{item.meta.title}</span>
-                    <span class="entry-sub muted">
+                  <span class="item-icon done"><Icon name={item.meta.speakerCount ? "users" : "fileText"} size={17} /></span>
+                  <span class="item-text">
+                    <span class="item-name" title={item.meta.sourcePath ?? item.meta.title}>{item.meta.title}</span>
+                    <span class="item-sub">
                       {item.meta.createdAt ? dateFormat.format(item.meta.createdAt * 1000) : ""}{#if item.meta.durationMs}
                         · {formatClock(item.meta.durationMs)}{/if}
                     </span>
                   </span>
                 </button>
-                <button
-                  class="icon-btn remove"
-                  aria-label={t("delete")}
-                  title={t("delete")}
-                  onclick={() => removeHistory(item.meta.id, item.meta.title)}
-                >
-                  <Icon name="trash" size={16} />
+                <button class="icon-btn remove" aria-label={t("delete")} title={t("delete")} onclick={() => removeHistory(item.meta.id, item.meta.title)}>
+                  <Icon name="trash" size={15} />
                 </button>
               </li>
             {/each}
           </ul>
         {/if}
-      </aside>
+      </nav>
 
-      <main class="detail">
+      <p class="sidebar-footer"><Icon name="shield" size={14} />{t("sidebarPrivacy")}</p>
+    </aside>
+
+    <section class="content">
+      <div class="titlebar drag" data-tauri-drag-region></div>
+      <div class="content-body">
         {@render skippedNotice()}
         {#if library.selectedJob}
           <JobView job={library.selectedJob} />
@@ -197,219 +205,259 @@
             <p class="muted loading"><Icon name="spinner" spin /></p>
           {/if}
         {:else}
-          <NewView {dragging} onPick={pickFiles} compact />
+          <div class="new-page">
+            <NewView {dragging} onPick={pickFiles} />
+          </div>
         {/if}
-      </main>
-    </div>
-  {/if}
-</div>
+      </div>
+    </section>
+  </div>
+{/if}
 
 <style>
-  .app {
+  /* Space for the window controls / drag area at the top. */
+  .titlebar {
+    height: 12px;
+    flex-shrink: 0;
+  }
+  :global(.mac) .titlebar {
+    height: 38px;
+  }
+
+  .welcome {
     height: 100vh;
     display: flex;
     flex-direction: column;
+    background: var(--grouped);
   }
-  .topbar {
+  .welcome-body {
+    flex: 1;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 8px 28px 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 20px;
+  }
+  .welcome-head {
+    text-align: center;
+  }
+  .app-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
+    background: linear-gradient(160deg, #19b4a3, #0d5f58);
+    color: #fff;
+    box-shadow: 0 4px 14px rgb(15 118 110 / 0.3);
+  }
+  .welcome-head h1 {
+    margin: 12px 0 2px;
+    font-size: 26px;
+    font-weight: 700;
+  }
+  .welcome-head p {
+    margin: 0;
+    font-size: 15px;
+  }
+  .privacy {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 14px 24px;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
+    justify-content: center;
+    gap: 6px;
+    margin: 0;
+    font-size: 13px;
+    color: var(--faint);
+  }
+
+  .window {
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+  }
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: var(--sidebar);
+    border-right: 0.5px solid var(--separator);
+  }
+  .sidebar-top {
+    height: 8px;
+    flex-shrink: 0;
+  }
+  :global(.mac) .sidebar-top {
+    height: 30px;
   }
   .brand {
     display: flex;
     align-items: center;
-    gap: 10px;
-    min-width: 0;
+    gap: 8px;
+    padding: 6px 18px 12px;
+    font-size: 15px;
   }
-  .brand-logo {
+  .brand-icon {
     display: grid;
     place-items: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 9px;
-    background: var(--primary);
-    color: var(--on-primary);
-  }
-  .tagline {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border-radius: 999px;
-    background: var(--primary-soft);
-    color: var(--primary-strong);
-    font-size: 14px;
-    white-space: nowrap;
-  }
-  .empty-state {
-    flex: 1;
-    overflow-y: auto;
-    padding: 40px 32px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 16px;
-  }
-  .workspace {
-    flex: 1;
-    display: grid;
-    grid-template-columns: 300px minmax(0, 1fr);
-    min-height: 0;
-  }
-  aside {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 20px 16px;
-    border-right: 1px solid var(--border);
-    background: var(--surface-2);
-    overflow-y: auto;
-  }
-  .detail {
-    padding: 28px 32px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: linear-gradient(160deg, #19b4a3, #0d5f58);
+    color: #fff;
   }
   .new-file {
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 8px;
-    min-height: 48px;
-    border: 2px dashed var(--border-strong);
-    border-radius: 12px;
-    background: var(--surface);
-    color: var(--text);
+    margin: 0 10px 8px;
+    min-height: 36px;
+    padding: 0 10px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: var(--primary-strong);
     font: inherit;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition:
-      border-color 150ms,
-      background-color 150ms;
   }
-  .new-file:hover,
+  .new-file:hover {
+    background: var(--hover);
+  }
   .new-file.selected {
-    border-color: var(--primary);
-    background: var(--primary-soft);
+    background: var(--selected);
   }
   .new-file:focus-visible {
-    outline: 3px solid var(--focus);
-    outline-offset: 2px;
+    outline: none;
+    box-shadow: 0 0 0 3px var(--focus);
+  }
+  .lists {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 10px 10px;
   }
   .section {
-    margin: 14px 4px 2px;
-    font-size: 13px;
-    font-weight: 650;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--muted);
+    margin: 14px 10px 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--faint);
   }
-  .list {
+  ul {
     list-style: none;
     margin: 0;
     padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
   }
-  .list li {
+  li {
     position: relative;
   }
-  .entry {
+  .item {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     width: 100%;
-    min-height: 56px;
-    padding: 8px 40px 8px 12px;
-    border: 1px solid transparent;
-    border-radius: 12px;
-    background: transparent;
+    min-height: 46px;
+    padding: 5px 34px 5px 10px;
+    border: none;
+    border-radius: 8px;
+    background: none;
     color: var(--text);
+    font: inherit;
     text-align: left;
     cursor: pointer;
-    font: inherit;
-    transition: background-color 150ms;
   }
-  .entry:hover {
-    background: var(--surface);
+  .item:hover {
+    background: var(--hover);
   }
-  .entry.selected {
-    background: var(--surface);
-    border-color: var(--border);
-    box-shadow: var(--shadow);
+  .item.selected {
+    background: var(--selected);
   }
-  .entry:focus-visible {
-    outline: 3px solid var(--focus);
-    outline-offset: 1px;
+  .item:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--focus);
   }
-  .entry-icon {
+  .item-icon {
     display: grid;
     place-items: center;
-    color: var(--muted);
+    color: var(--faint);
   }
-  .entry-icon.running,
-  .entry-icon.done {
+  .item-icon.running,
+  .item-icon.done {
     color: var(--primary-strong);
   }
-  .entry-icon.error {
+  .item-icon.error {
     color: var(--danger);
   }
-  .entry-text {
+  .item-text {
     display: flex;
     flex-direction: column;
     min-width: 0;
+    line-height: 1.3;
   }
-  .entry-name {
-    font-weight: 600;
+  .item-name {
+    font-size: 14px;
+    font-weight: 500;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .entry-sub {
-    font-size: 13px;
+  .item-sub {
+    font-size: 12px;
+    color: var(--muted);
     white-space: nowrap;
   }
   .remove {
     position: absolute;
-    right: 6px;
+    right: 4px;
     top: 50%;
     transform: translateY(-50%);
     opacity: 0;
-    transition: opacity 150ms;
+    transition: opacity 120ms;
   }
-  .list li:hover .remove,
+  li:hover .remove,
   .remove:focus-visible {
     opacity: 1;
+  }
+  .sidebar-footer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 10px 18px 14px;
+    font-size: 12px;
+    color: var(--faint);
+    border-top: 0.5px solid var(--separator);
+  }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: var(--bg);
+  }
+  .content-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 36px 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .new-page {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    max-width: 620px;
+    margin: 0 auto;
   }
   .loading {
     display: flex;
     justify-content: center;
     padding: 40px;
-  }
-
-  @media (max-width: 820px) {
-    .workspace {
-      grid-template-columns: 1fr;
-    }
-    aside {
-      border-right: none;
-      border-bottom: 1px solid var(--border);
-      max-height: 40vh;
-    }
-    .tagline {
-      display: none;
-    }
   }
 </style>

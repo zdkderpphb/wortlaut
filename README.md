@@ -10,7 +10,7 @@
 &nbsp;&nbsp;·&nbsp;&nbsp;
 [**⬇ Für Windows herunterladen**](https://github.com/zdkderpphb/wortlaut/releases/latest/download/Wortlaut-Windows-setup.exe)
 
-<img src="assets/screenshot-result.png" width="760" alt="Wortlaut zeigt ein fertiges Transkript mit Zusammenfassung und Knöpfen zum Speichern als Word, Text, Markdown und weiteren Formaten">
+<img src="assets/screenshot-result.png" width="760" alt="Wortlaut zeigt ein fertiges Transkript mit farbig markierten Sprechern, Zeitmarken und dem Knopf Speichern">
 
 </div>
 
@@ -28,7 +28,7 @@
 Das war's. Ab jetzt funktioniert Wortlaut auch ohne Internet.
 
 <div align="center">
-<img src="assets/screenshot-home.png" width="560" alt="Startseite von Wortlaut mit großer Fläche zum Hineinziehen von Dateien">
+<img src="assets/screenshot-home.png" width="560" alt="Startseite von Wortlaut mit Fläche zum Hineinziehen von Dateien und den Optionen Sprache und Sprecher unterscheiden">
 </div>
 
 ## Was Wortlaut kann
@@ -40,8 +40,8 @@ Das war's. Ab jetzt funktioniert Wortlaut auch ohne Internet.
   Niederländisch und Hindi – auf Wunsch automatisch erkannt.
 - **Sprecher unterscheiden:** Wer spricht wann – für Interviews und Gruppen, beliebig viele
   Personen. Aus „Sprecher 1“ wird mit einem Klick „Interviewerin“.
-- **Für Forschung und Analyse:** Speichern für **MAXQDA**, **ATLAS.ti** und **NVivo** – mit
-  Zeitmarken und Sprechern, sodass Text und Aufnahme dort verbunden sind.
+- **Für Forschung und Analyse:** Unter **Speichern** finden Sie neben Word, Text und Markdown auch
+  **MAXQDA**, **ATLAS.ti** und **NVivo** – mit Zeitmarken und Sprechern, sodass Text und Aufnahme dort verbunden sind.
 - **Untertitel:** Als SRT-Datei für Videos.
 - **Zusammenfassung:** Auf Knopfdruck die wichtigsten Punkte eines Gesprächs.
 - **Bequem korrigieren:** Text direkt bearbeiten, Stelle anhören (▶ neben jedem Absatz),
@@ -50,7 +50,7 @@ Das war's. Ab jetzt funktioniert Wortlaut auch ohne Internet.
 - **Mehrere Dateien:** Einfach alle auf einmal hineinziehen – sie werden der Reihe nach umgewandelt.
 
 <div align="center">
-<img src="assets/screenshot-speakers.png" width="560" alt="Transkript mit farbig markierten Sprechern Moderatorin, Projektleiter und Buchhaltung, jeweils mit Zeitmarke und Abspiel-Knopf">
+<img src="assets/screenshot-save.png" width="560" alt="Speichern-Ansicht mit Formaten in drei Gruppen: Dokument, Analyse-Software und Weitere">
 </div>
 
 ## Beim ersten Öffnen
@@ -122,7 +122,7 @@ Wenn Sie wissen, wie viele Personen sprechen, wählen Sie die **Anzahl** aus; da
 <details>
 <summary><b>Wie übernehme ich ein Transkript in MAXQDA, ATLAS.ti oder NVivo?</b></summary>
 
-Klicken Sie auf **Weitere** und wählen Sie Ihr Programm. Die Datei enthält Zeitmarken und Sprecher.
+Klicken Sie auf **Speichern …** und wählen Sie Ihr Programm. Die Datei enthält Zeitmarken und Sprecher.
 
 - **MAXQDA:** *Import → Transkripte (mit Zeitmarken)* und die Audiodatei zuordnen.
 - **ATLAS.ti:** Die Aufnahme als Dokument hinzufügen und die Word-Datei als Transkript damit verknüpfen.
