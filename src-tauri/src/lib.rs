@@ -1,5 +1,6 @@
 pub mod audio;
 pub mod chunker;
+pub mod diarize;
 mod commands;
 pub mod engine;
 pub mod export;

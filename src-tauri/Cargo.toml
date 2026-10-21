@@ -40,6 +40,7 @@ fs4 = "1.1"
 # Metal on Apple Silicon: static build, metallib embedded – nothing extra to ship.
 [target.'cfg(target_os = "macos")'.dependencies]
 transcribe-cpp = "0.4.0"
+sherpa-onnx = "1.13.8"
 
 # Windows: Vulkan as a loadable module, so the app still starts (on CPU)
 # on machines without a Vulkan driver.
@@ -47,9 +48,12 @@ transcribe-cpp = "0.4.0"
 transcribe-cpp = { version = "0.4.0", default-features = false, features = ["vulkan", "dynamic-backends"] }
 # Direct dependency only so build.rs gets DEP_TRANSCRIBE_RUNTIME_DIR (the DLLs to ship).
 transcribe-cpp-sys = { version = "0.4.0", default-features = false, features = ["vulkan", "dynamic-backends"] }
+# The static Windows build uses the static C runtime (/MT), Rust uses /MD – so DLLs here.
+sherpa-onnx = { version = "1.13.8", default-features = false, features = ["shared"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 transcribe-cpp = { version = "0.4.0", default-features = false }
+sherpa-onnx = "1.13.8"
 
 [dev-dependencies]
 hound = "3.5"
