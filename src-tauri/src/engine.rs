@@ -3,7 +3,7 @@
 use std::path::Path;
 
 pub use transcribe_cpp::CancelToken;
-use transcribe_cpp::{Error as TcError, Model, RunOptions, Session, SessionOptions};
+use transcribe_cpp::{Backend, Error as TcError, Model, ModelOptions, RunOptions, Session, SessionOptions};
 
 use crate::chunker;
 use crate::transcript::Segment;
@@ -29,13 +29,24 @@ pub struct Engine {
 }
 
 impl Engine {
+    /// Loads on the best device (GPU when possible). If that fails – a broken
+    /// graphics driver, too little video memory – it falls back to the CPU:
+    /// slower, but it works.
     pub fn load(path: &Path) -> Result<Engine, EngineError> {
         init_backends()?;
-        let model = Model::load(path).map_err(|e| EngineError::Load(e.to_string()))?;
-        let backend = model.backend();
+        Self::load_on(path, Backend::Auto).or_else(|err| {
+            log::warn!("loading on the best device failed ({err}), falling back to CPU");
+            Self::load_on(path, Backend::Cpu)
+        })
+    }
+
+    fn load_on(path: &Path, backend: Backend) -> Result<Engine, EngineError> {
+        let load_error = |e: TcError| EngineError::Load(e.to_string());
+        let model = Model::load_with(path, &ModelOptions { backend, ..Default::default() }).map_err(load_error)?;
         let session = model
             .session_with(&SessionOptions { n_ctx: CONTEXT_TOKENS, ..Default::default() })
-            .map_err(|e| EngineError::Load(e.to_string()))?;
+            .map_err(load_error)?;
+        let backend = model.backend();
         log::info!("model loaded on {backend}");
         Ok(Engine { session, backend })
     }
@@ -151,5 +162,11 @@ mod tests {
         cancelled.cancel();
         let err = engine.transcribe(&pcm, None, &cancelled, |_, _| {}).unwrap_err();
         assert!(matches!(err, EngineError::Cancelled));
+
+        // The fallback for machines without a usable GPU.
+        let mut cpu = Engine::load_on(Path::new(&model), Backend::Cpu).unwrap();
+        assert_eq!(cpu.backend_name(), "CPU");
+        let segments = cpu.transcribe(&pcm, Some("de"), &CancelToken::new(), |_, _| {}).unwrap();
+        assert!(segments[0].text.to_lowercase().contains("wien"), "{segments:?}");
     }
 }
