@@ -40,3 +40,22 @@ export function replaceInSegments(segments: Segment[], query: string, replacemen
   }
   return count;
 }
+
+/** Paragraphs and summary – what "Alle ersetzen" changes. */
+export function countInTranscript(t: Transcript, query: string): number {
+  const re = pattern(query);
+  const inSummary = re && t.summary ? (t.summary.match(re)?.length ?? 0) : 0;
+  return countMatches(t.segments, query) + inSummary;
+}
+
+export function replaceInTranscript(t: Transcript, query: string, replacement: string): number {
+  let count = replaceInSegments(t.segments, query, replacement);
+  const re = pattern(query);
+  if (re && t.summary) {
+    t.summary = t.summary.replace(re, () => {
+      count++;
+      return replacement;
+    });
+  }
+  return count;
+}

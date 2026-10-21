@@ -17,7 +17,7 @@
   import Icon from "./Icon.svelte";
   import { library } from "./library.svelte";
   import { settings } from "./settings.svelte";
-  import { countMatches, plainText, replaceInSegments } from "./text";
+  import { countInTranscript, plainText, replaceInTranscript } from "./text";
 
   let { transcript }: { transcript: Transcript } = $props();
 
@@ -49,7 +49,7 @@
   let query = $state("");
   let replacement = $state("");
   let replacedCount = $state<number | null>(null);
-  const matches = $derived(countMatches(transcript.segments, query));
+  const matches = $derived(countInTranscript(transcript, query));
 
   let summarizing = $state(false);
   let summaryStep = $state<{ done: number; total: number } | null>(null);
@@ -153,7 +153,7 @@
   }
 
   function replaceAll() {
-    replacedCount = replaceInSegments(transcript.segments, query, replacement);
+    replacedCount = replaceInTranscript(transcript, query, replacement);
     if (replacedCount) changed();
   }
 
@@ -181,7 +181,10 @@
     renameAt = index;
     renameValue = transcript.speakers[speaker];
     await tick();
-    document.getElementById("rename-input")?.focus();
+    // Old name selected: typing simply replaces it.
+    const input = document.getElementById("rename-input") as HTMLInputElement | null;
+    input?.focus();
+    input?.select();
   }
 
   function commitRename(speaker: number) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Segment, Transcript } from "./api";
-import { countMatches, plainText, replaceInSegments } from "./text";
+import { countInTranscript, countMatches, plainText, replaceInSegments, replaceInTranscript } from "./text";
 
 const seg = (startMs: number, text: string, speaker: number | null = null): Segment => ({
   startMs,
@@ -52,5 +52,23 @@ describe("search and replace", () => {
     expect(countMatches(copy, "(ca.)")).toBe(2);
     expect(replaceInSegments(copy, "(ca.)", "etwa")).toBe(2);
     expect(copy[0].text).toBe("Kosten etwa 5 € und etwa 6 €");
+  });
+});
+
+describe("search and replace across the whole transcript", () => {
+  it("includes the summary", () => {
+    const t = transcript([seg(0, "Projekt in Linz")]);
+    t.summary = "Es geht um Linz. Linz ist schön.";
+    expect(countInTranscript(t, "linz")).toBe(3);
+    expect(replaceInTranscript(t, "Linz", "Graz")).toBe(3);
+    expect(t.segments[0].text).toBe("Projekt in Graz");
+    expect(t.summary).toBe("Es geht um Graz. Graz ist schön.");
+  });
+
+  it("copes with a missing summary", () => {
+    const t = transcript([seg(0, "Linz")]);
+    expect(countInTranscript(t, "Linz")).toBe(1);
+    expect(replaceInTranscript(t, "Linz", "Wien")).toBe(1);
+    expect(t.summary).toBeNull();
   });
 });
