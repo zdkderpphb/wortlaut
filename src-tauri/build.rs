@@ -57,12 +57,19 @@ fn stage_windows_runtime() {
     }
     engine_dlls.iter().for_each(|p| copy(p));
 
-    // sherpa-onnx (speaker detection): its build script unpacks the DLLs
-    // somewhere below its OUT_DIR, which survives a warm build cache.
+    // sherpa-onnx (speaker detection): its build script unpacks the prebuilt
+    // DLLs to <target>/sherpa-onnx-prebuilt/<archive>/lib.
     let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
-    let build_dir = out_dir.ancestors().nth(2).expect("target/<profile>/build").to_path_buf();
-    let sherpa_dir = find_dir_with(&build_dir, "sherpa-onnx-sys-", "sherpa-onnx-c-api.dll")
-        .unwrap_or_else(|| panic!("sherpa-onnx-c-api.dll not found below {}", build_dir.display()));
+    let target_dir = std::env::var_os("CARGO_TARGET_DIR").map(PathBuf::from).unwrap_or_else(|| {
+        out_dir
+            .ancestors()
+            .find(|p| p.file_name().is_some_and(|n| n == "target"))
+            .expect("target dir")
+            .to_path_buf()
+    });
+    let prebuilt = target_dir.join("sherpa-onnx-prebuilt");
+    let sherpa_dir = find_dir_with(&prebuilt, "sherpa-onnx-v", "sherpa-onnx-c-api.dll")
+        .unwrap_or_else(|| panic!("sherpa-onnx-c-api.dll not found below {}", prebuilt.display()));
     for entry in std::fs::read_dir(&sherpa_dir).expect("read sherpa dir").flatten() {
         let path = entry.path();
         if path.extension().is_some_and(|e| e.eq_ignore_ascii_case("dll")) {
