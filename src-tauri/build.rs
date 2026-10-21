@@ -24,8 +24,8 @@ fn link_clang_runtime() {
 /// Windows loads DLLs from the exe's folder. Collect everything the app needs
 /// at runtime into `runtime/`, which `tauri.windows.conf.json` installs next
 /// to the exe: transcribe.cpp + ggml (incl. the Vulkan and per-CPU backend
-/// modules, staged into the profile dir by transcribe-cpp-sys) and the VC++
-/// runtime, so a fresh Windows install needs nothing extra.
+/// modules, from transcribe-cpp-sys's install dir) and the VC++ runtime, so a
+/// fresh Windows install needs nothing extra.
 #[cfg(windows)]
 fn stage_windows_runtime() {
     use std::path::{Path, PathBuf};
@@ -34,27 +34,26 @@ fn stage_windows_runtime() {
     let runtime = manifest.join("runtime");
     std::fs::create_dir_all(&runtime).expect("create runtime dir");
 
-    // OUT_DIR = <target>/<profile>/build/<crate>-<hash>/out
-    let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
-    let profile_dir = out_dir.ancestors().nth(3).expect("profile dir").to_path_buf();
-
     let copy = |src: &Path| {
         if let Some(name) = src.file_name() {
             std::fs::copy(src, runtime.join(name)).unwrap_or_else(|e| panic!("copy {}: {e}", src.display()));
         }
     };
 
-    let engine_dlls: Vec<PathBuf> = std::fs::read_dir(&profile_dir)
-        .expect("read profile dir")
-        .flatten()
-        .map(|e| e.path())
-        .filter(|p| {
-            let name = p.file_name().and_then(|n| n.to_str()).unwrap_or_default();
-            name.ends_with(".dll") && (name.starts_with("ggml") || name.starts_with("transcribe"))
-        })
-        .collect();
+    // Set by transcribe-cpp-sys (links = "transcribe") for direct dependents.
+    let mut engine_dlls = Vec::new();
+    for var in ["DEP_TRANSCRIBE_RUNTIME_DIR", "DEP_TRANSCRIBE_MODULE_DIR"] {
+        println!("cargo:rerun-if-env-changed={var}");
+        let Ok(dir) = std::env::var(var) else { continue };
+        for entry in std::fs::read_dir(&dir).unwrap_or_else(|e| panic!("read {dir}: {e}")).flatten() {
+            let path = entry.path();
+            if path.extension().is_some_and(|e| e.eq_ignore_ascii_case("dll")) {
+                engine_dlls.push(path);
+            }
+        }
+    }
     if engine_dlls.is_empty() {
-        panic!("no transcribe/ggml DLLs in {} – is transcribe-cpp built with `shared`?", profile_dir.display());
+        panic!("transcribe-cpp-sys reported no runtime DLLs – is it built with `dynamic-backends`?");
     }
     engine_dlls.iter().for_each(|p| copy(p));
 
@@ -64,4 +63,6 @@ fn stage_windows_runtime() {
     }
 
     println!("cargo:rerun-if-changed=build.rs");
+    // Re-stage when the folder is missing, e.g. on a fresh checkout with a warm target cache.
+    println!("cargo:rerun-if-changed=runtime");
 }

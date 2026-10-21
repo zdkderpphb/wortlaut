@@ -45,6 +45,8 @@ transcribe-cpp = "0.4.0"
 # on machines without a Vulkan driver.
 [target.'cfg(windows)'.dependencies]
 transcribe-cpp = { version = "0.4.0", default-features = false, features = ["vulkan", "dynamic-backends"] }
+# Direct dependency only so build.rs gets DEP_TRANSCRIBE_RUNTIME_DIR (the DLLs to ship).
+transcribe-cpp-sys = { version = "0.4.0", default-features = false, features = ["vulkan", "dynamic-backends"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 transcribe-cpp = { version = "0.4.0", default-features = false }
