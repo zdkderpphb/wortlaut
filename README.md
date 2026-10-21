@@ -107,7 +107,7 @@ herunterzuladen. Die Umwandlung passiert vollständig auf Ihrem Computer.
 <summary><b>Wie genau ist der Text?</b></summary>
 
 Bei deutlicher Sprache sehr genau. Namen, Fachbegriffe und Gespräche, in denen viele
-durcheinander reden, sollten Sie kurz gegenlesen. Wer gerade spricht, erkennt Wortlaut nicht.
+durcheinander reden, sollten Sie kurz gegenlesen.
 </details>
 
 <details>
@@ -198,12 +198,14 @@ WORTLAUT_MODEL=<ordner>/Voxtral-Mini-3B-2507-Q4_K_M.gguf WORTLAUT_DIARIZE_MODELS
 | `src-tauri/src/model_manager.rs`| Modelle herunterladen (fortsetzbar, mit Prüfsumme)        |
 | `src-tauri/src/export.rs`       | Word, Text, Markdown, SRT, MAXQDA, ATLAS.ti, NVivo, JSON    |
 | `src-tauri/src/commands.rs`     | Verbindung zwischen Oberfläche und Rust                   |
+| `scripts/windows/`, `src-tauri/msix/` | Windows-Installer testen, Store-Paket bauen und testen |
 
 **Neue Version veröffentlichen:** Versionsnummer in `package.json`, `src-tauri/Cargo.toml` und
 `src-tauri/tauri.conf.json` erhöhen, dann `git tag v0.2.0 && git push --tags`. GitHub Actions baut
 beide Installer, prüft sie mit einem Selbsttest und legt einen Release-Entwurf an. Nach dem
 Veröffentlichen zeigen die Download-Links oben automatisch auf die neue Version.
-Signierung für Mac und Windows: siehe [docs/SIGNING.md](docs/SIGNING.md).
+Signierung für Mac und Windows: siehe [docs/SIGNING.md](docs/SIGNING.md);
+Microsoft Store: siehe [docs/STORE.md](docs/STORE.md).
 
 ## Lizenz und Dank
 

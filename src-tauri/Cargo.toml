@@ -53,6 +53,8 @@ transcribe-cpp-sys = { version = "0.4.0", default-features = false, features = [
 sherpa-onnx = { version = "1.13.8", default-features = false, features = ["shared"] }
 # Direct dependency so its build script (which fetches the DLLs) runs before ours.
 sherpa-onnx-sys = { version = "1.13.8", default-features = false, features = ["shared"] }
+# Store build: find the package's own data folder (src/packaged.rs).
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Storage_Packaging_Appx"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 transcribe-cpp = { version = "0.4.0", default-features = false }

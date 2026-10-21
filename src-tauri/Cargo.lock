@@ -6138,6 +6138,7 @@ dependencies = [
  "transcribe-cpp",
  "transcribe-cpp-sys",
  "whatlang",
+ "windows-sys 0.61.2",
  "zip 9.0.5",
 ]
 

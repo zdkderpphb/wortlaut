@@ -1,0 +1,28 @@
+name: Windows build dependencies
+description: Vulkan SDK and the sherpa-onnx DLLs that building Wortlaut on Windows needs.
+
+runs:
+  using: composite
+  steps:
+    # LunarG prunes old SDKs – when bumping, check the download URL exists.
+    - name: Install Vulkan SDK
+      shell: pwsh
+      run: |
+        $v = "1.4.350.0"
+        curl.exe -o "$env:RUNNER_TEMP\vulkan_sdk.exe" -L "https://sdk.lunarg.com/sdk/download/$v/windows/vulkan_sdk.exe"
+        & "$env:RUNNER_TEMP\vulkan_sdk.exe" --accept-licenses --default-answer --confirm-command install
+        Add-Content $env:GITHUB_ENV "VULKAN_SDK=C:\VulkanSDK\$v"
+        Add-Content $env:GITHUB_PATH "C:\VulkanSDK\$v\bin"
+
+    # sherpa-onnx (speaker detection) as DLLs. Fetched here instead of by its
+    # build script, so a warm build cache can't leave the DLLs out.
+    # Keep the version in step with sherpa-onnx in src-tauri/Cargo.lock.
+    - name: Fetch sherpa-onnx
+      shell: pwsh
+      run: |
+        $v = "1.13.8"
+        $name = "sherpa-onnx-v$v-win-x64-shared-MT-Release-lib"
+        curl.exe -L --fail -o "$env:RUNNER_TEMP\sherpa.tar.bz2" "https://github.com/k2-fsa/sherpa-onnx/releases/download/v$v/$name.tar.bz2"
+        tar -xjf "$env:RUNNER_TEMP\sherpa.tar.bz2" -C "$env:RUNNER_TEMP"
+        Get-ChildItem "$env:RUNNER_TEMP\$name\lib\*.dll" | Format-Table Name, Length
+        Add-Content $env:GITHUB_ENV "SHERPA_ONNX_LIB_DIR=$env:RUNNER_TEMP\$name\lib"

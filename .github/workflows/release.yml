@@ -51,7 +51,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     env:
-      VULKAN_VERSION: "1.4.350.0"
       HAS_APPLE_CERT: ${{ secrets.APPLE_CERTIFICATE != '' }}
     steps:
       - uses: actions/checkout@v7
@@ -69,28 +68,8 @@ jobs:
         with:
           workspaces: src-tauri -> target
 
-      - name: Install Vulkan SDK (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          curl.exe -o "$env:RUNNER_TEMP\vulkan_sdk.exe" -L "https://sdk.lunarg.com/sdk/download/${env:VULKAN_VERSION}/windows/vulkan_sdk.exe"
-          & "$env:RUNNER_TEMP\vulkan_sdk.exe" --accept-licenses --default-answer --confirm-command install
-          Add-Content $env:GITHUB_ENV "VULKAN_SDK=C:\VulkanSDK\${env:VULKAN_VERSION}"
-          Add-Content $env:GITHUB_PATH "C:\VulkanSDK\${env:VULKAN_VERSION}\bin"
-
-      # sherpa-onnx (speaker detection) as DLLs. Fetched here instead of by its
-      # build script, so a warm build cache can't leave the DLLs out.
-      # Keep the version in step with sherpa-onnx in src-tauri/Cargo.lock.
-      - name: Fetch sherpa-onnx (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $v = "1.13.8"
-          $name = "sherpa-onnx-v$v-win-x64-shared-MT-Release-lib"
-          curl.exe -L --fail -o "$env:RUNNER_TEMP\sherpa.tar.bz2" "https://github.com/k2-fsa/sherpa-onnx/releases/download/v$v/$name.tar.bz2"
-          tar -xjf "$env:RUNNER_TEMP\sherpa.tar.bz2" -C "$env:RUNNER_TEMP"
-          Get-ChildItem "$env:RUNNER_TEMP\$name\lib\*.dll" | Format-Table Name, Length
-          Add-Content $env:GITHUB_ENV "SHERPA_ONNX_LIB_DIR=$env:RUNNER_TEMP\$name\lib"
+      - if: runner.os == 'Windows'
+        uses: ./.github/actions/windows-build-deps
 
       # Signing switches on by itself once these secrets exist (see docs/SIGNING.md).
       - name: Enable macOS signing and notarization
@@ -147,16 +126,34 @@ jobs:
           app="src-tauri/target/aarch64-apple-darwin/release/bundle/macos/Wortlaut.app"
           "$app/Contents/MacOS/wortlaut" --self-test "$RUNNER_TEMP/self-test.txt"
 
-      - name: Install and self-test the Windows installer
+      - name: Install and test the Windows installer
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $setup = Get-ChildItem src-tauri/target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
-          Start-Process -FilePath $setup.FullName -ArgumentList "/S" -Wait
-          $dir = "$env:LOCALAPPDATA\Wortlaut"
-          Get-ChildItem $dir | Format-Table Name, Length
-          $exe = Get-ChildItem "$dir\*.exe" | Where-Object { $_.Name -notlike "uninstall*" } | Select-Object -First 1
-          $report = "$env:RUNNER_TEMP\self-test.txt"
-          $p = Start-Process -FilePath $exe.FullName -ArgumentList "--self-test", $report -Wait -PassThru
-          Get-Content $report
-          if ($p.ExitCode -ne 0) { throw "self-test failed with exit code $($p.ExitCode)" }
+          ./scripts/windows/test-installer.ps1 -Setup $setup.FullName
+
+      # Microsoft Store package. The identity comes from Partner Center, stored
+      # as repository variables (see docs/STORE.md); the Store signs on upload.
+      - name: Build the Store package
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          MSSTORE_IDENTITY_NAME: ${{ vars.MSSTORE_IDENTITY_NAME }}
+          MSSTORE_PUBLISHER: ${{ vars.MSSTORE_PUBLISHER }}
+          MSSTORE_PUBLISHER_NAME: ${{ vars.MSSTORE_PUBLISHER_NAME }}
+        run: ./scripts/windows/make-msix.ps1
+
+      - name: Install and test the Store package
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./scripts/windows/test-msix.ps1
+
+      # Not on the release page: unsigned, it only installs through the Store.
+      - name: Keep the Store package for upload to Partner Center
+        if: runner.os == 'Windows' && vars.MSSTORE_IDENTITY_NAME != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: Wortlaut-Store-${{ steps.tauri.outputs.appVersion }}
+          path: src-tauri/target/msix/Wortlaut-Store.msix
+          if-no-files-found: error

@@ -411,6 +411,7 @@ fn startup_files(args: impl Iterator<Item = String>) -> Vec<String> {
 pub fn open_log_dir(app: AppHandle) -> CommandResult<()> {
     let dir = app.path().app_log_dir().map_err(|e| CommandError::new("file_read", e))?;
     std::fs::create_dir_all(&dir).map_err(|e| CommandError::new("file_read", e))?;
+    let dir = crate::packaged::visible_path(dir);
     app.opener()
         .open_path(dir.to_string_lossy(), None::<&str>)
         .map_err(|e| CommandError::new("file_read", e))

@@ -25,8 +25,11 @@ The release workflow detects `APPLE_CERTIFICATE` and then signs and notarizes th
 
 ## Windows
 
-Windows trusts installers signed with a code-signing certificate. The simplest current option for
-organisations is [Azure Artifact Signing](https://learn.microsoft.com/azure/artifact-signing/)
-(formerly Trusted Signing). Tauri calls any signing tool through `bundle.windows.signCommand`; see
-the [Tauri guide on Windows code signing](https://v2.tauri.app/distribute/sign/windows/) and add
-the command to `src-tauri/tauri.windows.conf.json`, with credentials as repository secrets.
+The Microsoft Store version is signed by Microsoft on upload – see [STORE.md](STORE.md).
+
+The installer on the release page is unsigned for now. Windows trusts installers signed with a
+code-signing certificate, for example from
+[Azure Artifact Signing](https://learn.microsoft.com/azure/artifact-signing/) (organisations) or,
+for open-source projects, the [SignPath Foundation](https://signpath.org/). Tauri calls any
+signing tool through `bundle.windows.signCommand`; see the
+[Tauri guide on Windows code signing](https://v2.tauri.app/distribute/sign/windows/).

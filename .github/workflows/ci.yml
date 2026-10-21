@@ -18,9 +18,6 @@ jobs:
         os: [macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
-    env:
-      # LunarG prunes old SDKs – when bumping, check the download URL exists.
-      VULKAN_VERSION: "1.4.350.0"
     steps:
       - uses: actions/checkout@v7
 
@@ -35,28 +32,8 @@ jobs:
         with:
           workspaces: src-tauri -> target
 
-      - name: Install Vulkan SDK (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          curl.exe -o "$env:RUNNER_TEMP\vulkan_sdk.exe" -L "https://sdk.lunarg.com/sdk/download/${env:VULKAN_VERSION}/windows/vulkan_sdk.exe"
-          & "$env:RUNNER_TEMP\vulkan_sdk.exe" --accept-licenses --default-answer --confirm-command install
-          Add-Content $env:GITHUB_ENV "VULKAN_SDK=C:\VulkanSDK\${env:VULKAN_VERSION}"
-          Add-Content $env:GITHUB_PATH "C:\VulkanSDK\${env:VULKAN_VERSION}\bin"
-
-      # sherpa-onnx (speaker detection) as DLLs. Fetched here instead of by its
-      # build script, so a warm build cache can't leave the DLLs out.
-      # Keep the version in step with sherpa-onnx in src-tauri/Cargo.lock.
-      - name: Fetch sherpa-onnx (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $v = "1.13.8"
-          $name = "sherpa-onnx-v$v-win-x64-shared-MT-Release-lib"
-          curl.exe -L --fail -o "$env:RUNNER_TEMP\sherpa.tar.bz2" "https://github.com/k2-fsa/sherpa-onnx/releases/download/v$v/$name.tar.bz2"
-          tar -xjf "$env:RUNNER_TEMP\sherpa.tar.bz2" -C "$env:RUNNER_TEMP"
-          Get-ChildItem "$env:RUNNER_TEMP\$name\lib\*.dll" | Format-Table Name, Length
-          Add-Content $env:GITHUB_ENV "SHERPA_ONNX_LIB_DIR=$env:RUNNER_TEMP\$name\lib"
+      - if: runner.os == 'Windows'
+        uses: ./.github/actions/windows-build-deps
 
       - run: npm ci
       - run: npm run check
@@ -66,3 +43,42 @@ jobs:
 
       - name: Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml --lib
+
+  # Builds what Windows users get – the installer and the Store package –
+  # and starts both, so packaging mistakes show up before a release.
+  windows-package:
+    name: Windows-Pakete
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+
+      - uses: ./.github/actions/windows-build-deps
+
+      - run: npm ci
+      - run: npm run tauri build -- --bundles nsis
+
+      - name: Install and test the installer
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem src-tauri/target/release/bundle/nsis/*-setup.exe | Select-Object -First 1
+          ./scripts/windows/test-installer.ps1 -Setup $setup.FullName
+
+      - name: Build the Store package
+        shell: pwsh
+        run: ./scripts/windows/make-msix.ps1
+
+      - name: Install and test the Store package
+        shell: pwsh
+        run: ./scripts/windows/test-msix.ps1

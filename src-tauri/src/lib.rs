@@ -7,6 +7,7 @@ pub mod export;
 pub mod history;
 pub mod language;
 pub mod model_manager;
+mod packaged;
 pub mod pieces;
 mod self_test;
 pub mod summary;
